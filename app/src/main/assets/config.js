@@ -6,5 +6,6 @@ window.UA_CONFIG = {
   overpassUrl: "https://overpass-api.de/api/interpreter",
   blockedCountryCodes: ["RU"],
   requireCountryCheck: true,
-  nearbyAlertRadiusKm: 20
+  nearbyAlertRadiusKm: 20,
+  authRedirectUrl: "ualivesmatter://auth/callback"
 };
