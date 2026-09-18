@@ -27,7 +27,7 @@ class MainActivity : Activity() {
         with(webView.settings) {
             javaScriptEnabled = true
             domStorageEnabled = true
-            geolocationEnabled = true
+            setGeolocationEnabled(true)
             allowFileAccess = true
         }
 
