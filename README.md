@@ -1,39 +1,45 @@
 # UA LIVES MATTER
 
-Android civilian-safety app for Ukraine.
+Android civilian-safety and community app for Ukraine.
 
-## v0.3
-- OpenStreetMap + Leaflet
-- Kyiv official shelter GeoJSON layer
-- Nearby OpenStreetMap bomb-shelter discovery
-- Community alerts with confirmation/rejection
-- Dedicated electricity, heating and water outage alerts
-- Separate utility layer for verified/provider incidents
-- General and regional realtime-ready chat
-- Supabase schema with RLS + Realtime
-- Official air-alert proxy function prepared for the Ukraine Alarm API
-- Public transport/station map layer
-- SOS, emergency numbers and offline 72-hour checklist
+## v0.4
+- Required email/password account system with Supabase Auth
+- Community feed with photo/video posts
+- 24-hour Stories
+- Instagram-inspired clean interface with Tinder-style swipe gestures
+- OpenStreetMap + Leaflet safety map
+- Community safety alerts with confirmation/rejection
+- Electricity, heating and water outage alerts
+- Nearby alert notifications while the app is open, plus background checks
+- General and regional realtime chat
+- Kyiv shelter layer + nearby OpenStreetMap shelters
+- Public transport/station layer
+- Editable per-user 72-hour emergency checklist
+- SOS and emergency numbers
+- Ukrainian, Russian and English UI
+- Regional app lock when Android geolocation resolves the device country as RU
 - GitHub Actions APK build on every push
 
-## Utility alerts
-Community users can report:
-- electricity outage
-- heating outage
-- water outage
+## Backend
+Supabase project: `UALIVESMATTER`
 
-Reports stay clearly marked as community/unverified until enough independent users confirm them.
+The backend contains:
+- profiles
+- posts
+- stories
+- post likes
+- realtime chat
+- community alerts and votes
+- verified utility incidents
+- per-user editable checklists
+- public social-media storage bucket
 
-The `utility_incidents` table is reserved for trusted/verified provider or administrator data and is read-only to public app clients. It supports current status, source, coordinates and expected restoration time.
+SQL migrations live under `backend/`.
 
-## Backend activation
-The app works offline/local without a backend. For cross-device chat and community alerts, configure a Supabase project using:
-1. `backend/supabase.sql`
-2. `backend/002_utility_incidents.sql`
+## Notifications
+Foreground notifications are triggered instantly by Supabase Realtime when a new community or utility alert is within the configured radius.
 
-Then place the project URL and publishable/anon key in `app/src/main/assets/config.js`.
-
-For official air alerts, deploy `supabase/functions/air-alerts` and configure the server-side secret `UKRAINE_ALARM_API_KEY`. The secret must never be embedded in the APK.
+Android WorkManager also checks for nearby alerts periodically in the background. Android's periodic-work minimum interval is approximately 15 minutes, so this is a fallback rather than an instant push service.
 
 ## Safety scope
 Civilian-safety only. Do not expose real-time troop positions, military movements, bases, vehicles or other operational military data.
