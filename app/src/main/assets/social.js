@@ -77,7 +77,7 @@ async function submitAuth(){
   document.getElementById('authSubmit').disabled=true;
   try{
     if(authMode==='register'){
-      const {data,error}=await sb.auth.signUp({email,password,options:{data:{username}}});
+      const {data,error}=await sb.auth.signUp({email,password,options:{data:{username},emailRedirectTo:cfg.authRedirectUrl}});
       if(error) throw error;
       if(data.session){
         if(username) await sb.from('profiles').update({username}).eq('id',data.user.id);
@@ -101,7 +101,6 @@ async function afterAuthenticated(session){
   hideAuth();
   await initBackend();
   await ensureProfile();
-  loadShelters();
   await Promise.allSettled([loadFeed(),loadStories(),loadChecklist()]);
   subscribeSocialRealtime();
   subscribeNearbyNotifications();
@@ -323,6 +322,37 @@ function maybeNotifyNearby(item){
   const body=(item.text||item.title||t('utilityIncident'))+' · '+d.toFixed(1)+' km';
   try{if(window.Android?.notifyNearbyAlert)Android.notifyNearbyAlert(title,body)}catch(e){}
 }
+
+async function handleAuthDeepLink(url){
+  try{
+    if(!sb) sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+    const parsed=new URL(url);
+    const hash=new URLSearchParams((parsed.hash||'').replace(/^#/,''));
+    const query=parsed.searchParams;
+    const access=hash.get('access_token')||query.get('access_token');
+    const refresh=hash.get('refresh_token')||query.get('refresh_token');
+    const code=query.get('code');
+    if(code){
+      const {data,error}=await sb.auth.exchangeCodeForSession(code);
+      if(error)throw error;
+      if(data?.session)await afterAuthenticated(data.session);
+      return;
+    }
+    if(access&&refresh){
+      const {data,error}=await sb.auth.setSession({access_token:access,refresh_token:refresh});
+      if(error)throw error;
+      if(data?.session)await afterAuthenticated(data.session);
+      return;
+    }
+    const {data:{session}}=await sb.auth.getSession();
+    if(session)await afterAuthenticated(session);
+  }catch(e){
+    const msg=document.getElementById('authMessage');
+    if(msg)msg.textContent=e?.message||String(e);
+    showAuth();
+  }
+}
+window.handleAuthDeepLink=handleAuthDeepLink;
 
 window.openPostSheet=openPostSheet;
 window.closePostSheet=closePostSheet;
