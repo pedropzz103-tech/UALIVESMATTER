@@ -414,7 +414,11 @@ window.setLanguage=function(lang){
 };
 
 window.setLanguage(currentLang);
-setTimeout(()=>{
+let safetyMapStarted=false;
+window.initSafetyMap=function(){
+  if(safetyMapStarted)return;
+  safetyMapStarted=true;
   loadAirAlertZones(true);
   refreshRiskZones();
-},1200);
+};
+if(typeof currentUser!=='undefined'&&currentUser)window.initSafetyMap();
