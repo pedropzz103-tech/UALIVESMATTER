@@ -9,6 +9,7 @@ window.UA_CONFIG = {
   nearbyAlertRadiusKm: 20,
   authRedirectUrl: "ualivesmatter://auth/callback",
   neptunBase: "https://neptun.in.ua",
+  safetyDataFunction: "safety-data",
   osrmBase: "https://router.project-osrm.org",
   routeShelterSearchMeters: 20000
 };
