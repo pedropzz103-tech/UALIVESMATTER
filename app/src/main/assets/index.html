@@ -1,5 +1,14 @@
-<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><title>UA LIVES MATTER</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><link rel="stylesheet" href="style.css"></head><body>
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>UA LIVES MATTER</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
 <div id="accessGate" class="access-gate">
   <div class="gate-card">
     <div class="gate-logo"><b>UA</b> LIVES MATTER</div>
@@ -8,28 +17,183 @@
     <button id="gateRetry" class="send" onclick="checkRegionalAccess()">Повторити</button>
   </div>
 </div>
-<div id="app"><div class="top"><div class="brand"><b>UA</b> LIVES MATTER</div><div class="top-actions"><select id="langSelect" class="lang" onchange="setLanguage(this.value)"><option value="uk">UA</option><option value="ru">RU</option><option value="en">EN</option></select><div id="backendStatus" class="status">OFFLINE</div></div></div>
-<section id="p-map" class="page active"><div class="mapbar">
-<button id="btnCommunity" class="chip on" onclick="toggleLayer('community',this)" data-i18n="community">⚠️ Спільнота</button><button id="btnUtilities" class="chip on" onclick="toggleLayer('utilities',this)" data-i18n="utilities">⚡💧 Комунальні</button><button id="btnShelter" class="chip on" onclick="toggleLayer('shelter',this)" data-i18n="shelters">🛡️ Укриття</button><button id="btnTransport" class="chip" onclick="toggleLayer('transport',this)" data-i18n="transport">🚇 Транспорт</button><button id="btnOfficial" class="chip" onclick="toggleLayer('official',this)" data-i18n="officialAlerts">📡 Тривоги</button>
-</div><div id="map"></div><button class="loc" onclick="locateMe()">⌖</button><button class="fab" onclick="openAlert()">＋</button></section>
 
-<section id="p-chat" class="page"><div class="scroll">
-<div class="hero"><h2 data-i18n="chatsTitle">💬 Чати</h2><p data-i18n="chatsDesc">Загальний чат України та регіональні канали.</p></div>
-<div class="card"><div class="row"><button class="chip on" data-channel="general" onclick="switchChannel('general',this)" data-i18n="general">🇺🇦 Загальний</button><button class="chip" data-channel="kyiv" onclick="switchChannel('kyiv',this)">Київ</button><button class="chip" data-channel="kharkiv" onclick="switchChannel('kharkiv',this)">Харків</button><button class="chip" data-channel="odesa" onclick="switchChannel('odesa',this)">Одеса</button></div></div>
-<div class="card" id="messages"></div><div class="row"><input id="chatInput" class="input grow" maxlength="280" data-i18n-placeholder="chatPlaceholder" placeholder="Напишіть повідомлення…"><button class="send" onclick="sendChat()" data-i18n="send">Надіслати</button></div>
-<div class="notice" data-i18n="militaryWarning">Не публікуйте оперативні дані про військових, техніку або пересування.</div>
-</div></section>
+<div id="authGate" class="access-gate hidden">
+  <div class="gate-card auth-card">
+    <div class="gate-logo"><b>UA</b> LIVES MATTER</div>
+    <h2 id="authTitle">Вхід</h2>
+    <input id="authEmail" class="input" type="email" autocomplete="email" placeholder="Email">
+    <input id="authPassword" class="input" type="password" autocomplete="current-password" placeholder="Password">
+    <input id="authUsername" class="input hidden" maxlength="32" placeholder="Username">
+    <button id="authSubmit" class="send full" onclick="submitAuth()">Увійти</button>
+    <button id="authSwitch" class="link-btn" onclick="toggleAuthMode()">Створити акаунт</button>
+    <div id="authMessage" class="small"></div>
+  </div>
+</div>
 
-<section id="p-survival" class="page"><div class="scroll"><div class="hero"><h2 data-i18n="safetyTitle">🎒 Безпека</h2><p data-i18n="safetyDesc">Критичні інструкції зберігаються локально та доступні без стабільного зв'язку.</p></div>
-<div class="card"><h3 data-i18n="emergencyNumbers">Екстрені номери</h3><div class="emergency"><button onclick="dial('112')"><strong>112</strong><span data-i18n="service112">Єдина служба</span></button><button onclick="dial('101')"><strong>101</strong><span data-i18n="service101">ДСНС</span></button><button onclick="dial('102')"><strong>102</strong><span data-i18n="service102">Поліція</span></button><button onclick="dial('103')"><strong>103</strong><span data-i18n="service103">Швидка</span></button></div></div>
-<div class="card"><h3 data-i18n="kit72">72-годинний набір</h3><div id="kit"></div></div>
-<div class="card"><h3 data-i18n="duringAlert">Під час тривоги</h3><div class="small" data-i18n="duringAlertText">Орієнтуйтесь на офіційні повідомлення і прямуйте до офіційного укриття. Дані спільноти завжди позначені окремо.</div></div></div></section>
+<div id="app">
+  <div class="top">
+    <div class="brand"><b>UA</b> LIVES MATTER</div>
+    <div class="top-actions">
+      <button class="sos-mini" onclick="dial('112')">SOS</button>
+      <select id="langSelect" class="lang" onchange="setLanguage(this.value)">
+        <option value="uk">UA</option><option value="ru">RU</option><option value="en">EN</option>
+      </select>
+      <div id="backendStatus" class="status">OFFLINE</div>
+    </div>
+  </div>
 
-<section id="p-sos" class="page"><div class="scroll"><div class="hero"><h2>🆘 SOS</h2><p data-i18n="sosDesc">Швидкий доступ до допомоги. Дзвінок завжди підтверджуєте ви.</p></div><button class="sos" onclick="dial('112')" data-i18n="call112">ВІДКРИТИ ВИКЛИК 112</button><div class="card"><h3 data-i18n="myPosition">Моя позиція</h3><div id="myPos" class="small" data-i18n="positionPrivate">Координати не публікуються автоматично.</div><button class="send" style="margin-top:10px" onclick="showPosition()" data-i18n="locate">Визначити позицію</button></div></div></section>
+  <section id="p-feed" class="page active">
+    <div class="feed-shell">
+      <div class="stories-wrap">
+        <div class="story-add" onclick="openStorySheet()"><div class="story-ring add-ring">＋</div><span data-i18n="addStory">Story</span></div>
+        <div id="stories" class="stories"></div>
+      </div>
+      <div class="feed-actions">
+        <div>
+          <strong data-i18n="feedTitle">Community feed</strong>
+          <div class="small" data-i18n="feedHint">Swipe right to like, left to skip.</div>
+        </div>
+        <button class="send compact" onclick="openPostSheet()" data-i18n="newPost">＋ Post</button>
+      </div>
+      <div id="feedDeck" class="feed-deck"></div>
+    </div>
+  </section>
 
-<nav class="nav"><button class="active" onclick="page('map',this)"><span>🗺️</span><b data-i18n="navMap">Мапа</b></button><button onclick="page('chat',this)"><span>💬</span><b data-i18n="navChat">Чат</b></button><button onclick="page('survival',this)"><span>🎒</span><b data-i18n="navSafety">Безпека</b></button><button onclick="page('sos',this)"><span>🆘</span>SOS</button></nav></div>
+  <section id="p-map" class="page">
+    <div class="mapbar">
+      <button id="btnCommunity" class="chip on" onclick="toggleLayer('community',this)" data-i18n="community">⚠️ Спільнота</button>
+      <button id="btnUtilities" class="chip on" onclick="toggleLayer('utilities',this)" data-i18n="utilities">⚡💧 Комунальні</button>
+      <button id="btnShelter" class="chip on" onclick="toggleLayer('shelter',this)" data-i18n="shelters">🛡️ Укриття</button>
+      <button id="btnTransport" class="chip" onclick="toggleLayer('transport',this)" data-i18n="transport">🚇 Транспорт</button>
+      <button id="btnOfficial" class="chip" onclick="toggleLayer('official',this)" data-i18n="officialAlerts">📡 Тривоги</button>
+    </div>
+    <div id="map"></div>
+    <button class="loc" onclick="locateMe()">⌖</button>
+    <button class="fab" onclick="openAlert()">＋</button>
+  </section>
 
-<div id="alertSheet" class="sheet" onclick="if(event.target===this)closeAlert()"><div class="sheetbox"><h2 data-i18n="newAlert">⚠️ Нове повідомлення</h2><div class="small" data-i18n="civilOnly">Лише цивільна безпека. Не публікуйте військові позиції або пересування.</div><div class="types">
-<button class="type sel" onclick="pickType(this,'danger')" data-i18n="typeDanger">⚠️ Небезпека</button><button class="type" onclick="pickType(this,'fire')" data-i18n="typeFire">🔥 Пожежа</button><button class="type" onclick="pickType(this,'road')" data-i18n="typeRoad">🚧 Дорога</button><button class="type" onclick="pickType(this,'power')" data-i18n="typePower">⚡ Немає світла</button><button class="type" onclick="pickType(this,'heating')" data-i18n="typeHeating">♨️ Немає тепла</button><button class="type" onclick="pickType(this,'water')" data-i18n="typeWater">💧 Немає води</button><button class="type" onclick="pickType(this,'shelter')" data-i18n="typeShelter">🛡️ Укриття</button><button class="type" onclick="pickType(this,'medical')" data-i18n="typeMedical">🩹 Медична</button></div>
-<textarea id="alertText" class="input" rows="3" maxlength="220" data-i18n-placeholder="alertPlaceholder" placeholder="Коротко опишіть ситуацію…"></textarea><div class="notice" data-i18n="alertPrivacy">Місце публікації округлюється. Інші користувачі можуть підтвердити або спростувати повідомлення.</div><div class="row"><button class="chip grow" onclick="closeAlert()" data-i18n="cancel">Скасувати</button><button class="send grow" onclick="submitAlert()" data-i18n="publish">Опублікувати</button></div></div></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js"></script></body></html>
+  <section id="p-chat" class="page">
+    <div class="scroll">
+      <div class="hero"><h2 data-i18n="chatsTitle">💬 Чати</h2><p data-i18n="chatsDesc">Загальний чат України та регіональні канали.</p></div>
+      <div class="card">
+        <div class="row channel-row">
+          <button class="chip on" data-channel="general" onclick="switchChannel('general',this)" data-i18n="general">🇺🇦 Загальний</button>
+          <button class="chip" data-channel="kyiv" onclick="switchChannel('kyiv',this)">Київ</button>
+          <button class="chip" data-channel="kharkiv" onclick="switchChannel('kharkiv',this)">Харків</button>
+          <button class="chip" data-channel="odesa" onclick="switchChannel('odesa',this)">Одеса</button>
+        </div>
+      </div>
+      <div class="card chat-box" id="messages"></div>
+      <div class="row">
+        <input id="chatInput" class="input grow" maxlength="280" data-i18n-placeholder="chatPlaceholder" placeholder="Напишіть повідомлення…">
+        <button class="send" onclick="sendChat()" data-i18n="send">Надіслати</button>
+      </div>
+      <div class="notice" data-i18n="militaryWarning">Не публікуйте оперативні дані про військових, техніку або пересування.</div>
+    </div>
+  </section>
+
+  <section id="p-survival" class="page">
+    <div class="scroll">
+      <div class="hero"><h2 data-i18n="safetyTitle">🎒 Безпека</h2><p data-i18n="safetyDesc">Критичні інструкції зберігаються локально.</p></div>
+      <button class="sos" onclick="dial('112')" data-i18n="call112">ВІДКРИТИ ВИКЛИК 112</button>
+
+      <div class="card">
+        <h3 data-i18n="emergencyNumbers">Екстрені номери</h3>
+        <div class="emergency">
+          <button onclick="dial('112')"><strong>112</strong><span data-i18n="service112">Єдина служба</span></button>
+          <button onclick="dial('101')"><strong>101</strong><span data-i18n="service101">ДСНС</span></button>
+          <button onclick="dial('102')"><strong>102</strong><span data-i18n="service102">Поліція</span></button>
+          <button onclick="dial('103')"><strong>103</strong><span data-i18n="service103">Швидка</span></button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row between"><h3 data-i18n="kit72">72-годинний набір</h3><span class="small" data-i18n="editable">Editable</span></div>
+        <div id="kit"></div>
+        <div class="row kit-add">
+          <input id="newKitItem" class="input grow" maxlength="160" data-i18n-placeholder="addKitItem" placeholder="Add item">
+          <button class="send" onclick="addChecklistItem()">＋</button>
+        </div>
+      </div>
+
+      <div class="card"><h3 data-i18n="duringAlert">Під час тривоги</h3><div class="small" data-i18n="duringAlertText">Орієнтуйтесь на офіційні повідомлення і прямуйте до офіційного укриття.</div></div>
+      <div class="card"><h3 data-i18n="myPosition">Моя позиція</h3><div id="myPos" class="small" data-i18n="positionPrivate">Координати не публікуються автоматично.</div><button class="send compact" style="margin-top:10px" onclick="showPosition()" data-i18n="locate">Визначити позицію</button></div>
+    </div>
+  </section>
+
+  <section id="p-profile" class="page">
+    <div class="scroll profile-page">
+      <div class="profile-card">
+        <div id="profileAvatar" class="profile-avatar">U</div>
+        <div class="grow">
+          <h2 id="profileUsername">User</h2>
+          <div id="profileEmail" class="small"></div>
+        </div>
+      </div>
+      <div class="profile-actions">
+        <button class="send" onclick="openPostSheet()" data-i18n="newPost">＋ Post</button>
+        <button class="send secondary" onclick="openStorySheet()" data-i18n="addStory">＋ Story</button>
+      </div>
+      <div class="card">
+        <label class="small" data-i18n="username">Username</label>
+        <div class="row"><input id="profileUsernameInput" class="input grow" maxlength="32"><button class="send" onclick="saveProfile()" data-i18n="save">Save</button></div>
+      </div>
+      <button class="danger-btn" onclick="logout()" data-i18n="logout">Log out</button>
+    </div>
+  </section>
+
+  <nav class="nav nav5">
+    <button id="navFeed" class="active" onclick="page('feed',this)"><span>⌂</span><b data-i18n="navFeed">Feed</b></button>
+    <button onclick="page('map',this)"><span>🗺️</span><b data-i18n="navMap">Мапа</b></button>
+    <button onclick="page('chat',this)"><span>💬</span><b data-i18n="navChat">Чат</b></button>
+    <button onclick="page('survival',this)"><span>🎒</span><b data-i18n="navSafety">Безпека</b></button>
+    <button onclick="page('profile',this)"><span>◎</span><b data-i18n="navProfile">Profile</b></button>
+  </nav>
+</div>
+
+<div id="alertSheet" class="sheet" onclick="if(event.target===this)closeAlert()"><div class="sheetbox">
+  <h2 data-i18n="newAlert">⚠️ Нове повідомлення</h2>
+  <div class="small" data-i18n="civilOnly">Лише цивільна безпека. Не публікуйте військові позиції або пересування.</div>
+  <div class="types">
+    <button class="type sel" onclick="pickType(this,'danger')" data-i18n="typeDanger">⚠️ Небезпека</button>
+    <button class="type" onclick="pickType(this,'fire')" data-i18n="typeFire">🔥 Пожежа</button>
+    <button class="type" onclick="pickType(this,'road')" data-i18n="typeRoad">🚧 Дорога</button>
+    <button class="type" onclick="pickType(this,'power')" data-i18n="typePower">⚡ Немає світла</button>
+    <button class="type" onclick="pickType(this,'heating')" data-i18n="typeHeating">♨️ Немає тепла</button>
+    <button class="type" onclick="pickType(this,'water')" data-i18n="typeWater">💧 Немає води</button>
+    <button class="type" onclick="pickType(this,'shelter')" data-i18n="typeShelter">🛡️ Укриття</button>
+    <button class="type" onclick="pickType(this,'medical')" data-i18n="typeMedical">🩹 Медична</button>
+  </div>
+  <textarea id="alertText" class="input" rows="3" maxlength="220" data-i18n-placeholder="alertPlaceholder" placeholder="Коротко опишіть ситуацію…"></textarea>
+  <div class="notice" data-i18n="alertPrivacy">Місце публікації округлюється.</div>
+  <div class="row"><button class="chip grow" onclick="closeAlert()" data-i18n="cancel">Скасувати</button><button class="send grow" onclick="submitAlert()" data-i18n="publish">Опублікувати</button></div>
+</div></div>
+
+<div id="postSheet" class="sheet" onclick="if(event.target===this)closePostSheet()"><div class="sheetbox">
+  <h2 data-i18n="newPost">New post</h2>
+  <textarea id="postCaption" class="input" rows="3" maxlength="2000" data-i18n-placeholder="caption" placeholder="Caption"></textarea>
+  <label class="file-picker"><input id="postMedia" type="file" accept="image/*,video/*"><span data-i18n="choosePhotoVideo">Choose photo or video</span></label>
+  <div id="postUploadStatus" class="small"></div>
+  <div class="row"><button class="chip grow" onclick="closePostSheet()" data-i18n="cancel">Cancel</button><button class="send grow" onclick="createPost()" data-i18n="publish">Publish</button></div>
+</div></div>
+
+<div id="storySheet" class="sheet" onclick="if(event.target===this)closeStorySheet()"><div class="sheetbox">
+  <h2 data-i18n="addStory">Add story</h2>
+  <label class="file-picker"><input id="storyMedia" type="file" accept="image/*,video/*"><span data-i18n="choosePhotoVideo">Choose photo or video</span></label>
+  <div id="storyUploadStatus" class="small"></div>
+  <div class="row"><button class="chip grow" onclick="closeStorySheet()" data-i18n="cancel">Cancel</button><button class="send grow" onclick="createStory()" data-i18n="publish">Publish</button></div>
+</div></div>
+
+<div id="storyViewer" class="story-viewer hidden" onclick="closeStoryViewer()">
+  <button class="story-close">×</button>
+  <div id="storyContent" class="story-content" onclick="event.stopPropagation()"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="social.js"></script>
+</body>
+</html>
