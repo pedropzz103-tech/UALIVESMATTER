@@ -4,7 +4,9 @@ Object.assign(I18N.uk,{
   riskMapCard:'Карта ризику',riskZones:'Зони цивільного ризику',
   safeRouteCard:'Безпечніший маршрут',toShelterOrPoint:'До укриття або точки',
   sheltersCard:'Укриття',nearestShelters:'Найближчі укриття',
+  transportCard:'Транспорт',stationsAndStops:'Станції та зупинки',
   utilitiesCard:'Комунальні послуги',powerWaterHeat:'Світло · вода · тепло',
+  emergencyKitCard:'Набір на випадок НС',editableChecklistCard:'Редагований чекліст',
   verifiedHelpCard:'Перевірена допомога',officialResources:'Офіційні ресурси',
   riskZonesChip:'Зони ризику',airAlertsChip:'Повітряні тривоги',
   highRisk:'Високий',mediumRisk:'Середній',attentionRisk:'Увага',
@@ -28,7 +30,9 @@ Object.assign(I18N.ru,{
   riskMapCard:'Карта риска',riskZones:'Зоны гражданского риска',
   safeRouteCard:'Более безопасный маршрут',toShelterOrPoint:'До укрытия или точки',
   sheltersCard:'Укрытия',nearestShelters:'Ближайшие укрытия',
+  transportCard:'Транспорт',stationsAndStops:'Станции и остановки',
   utilitiesCard:'Коммунальные услуги',powerWaterHeat:'Свет · вода · тепло',
+  emergencyKitCard:'Экстренный набор',editableChecklistCard:'Редактируемый чек-лист',
   verifiedHelpCard:'Проверенная помощь',officialResources:'Официальные ресурсы',
   riskZonesChip:'Зоны риска',airAlertsChip:'Воздушные тревоги',
   highRisk:'Высокий',mediumRisk:'Средний',attentionRisk:'Внимание',
@@ -52,7 +56,9 @@ Object.assign(I18N.en,{
   riskMapCard:'Risk map',riskZones:'Civilian risk zones',
   safeRouteCard:'Safer route',toShelterOrPoint:'Shelter or destination',
   sheltersCard:'Shelters',nearestShelters:'Nearest shelters',
+  transportCard:'Transport',stationsAndStops:'Stations & stops',
   utilitiesCard:'Utilities',powerWaterHeat:'Power · water · heat',
+  emergencyKitCard:'Emergency kit',editableChecklistCard:'Editable checklist',
   verifiedHelpCard:'Verified help',officialResources:'Official resources',
   riskZonesChip:'Risk zones',airAlertsChip:'Air alerts',
   highRisk:'High',mediumRisk:'Medium',attentionRisk:'Attention',
@@ -373,6 +379,18 @@ async function openSafetyFeature(kind){
     if(nav)page('map',nav);
     if(!map.hasLayer(layers.utilities))map.addLayer(layers.utilities);
     document.getElementById('btnUtilities')?.classList.add('on');
+    return;
+  }
+  if(kind==='transport'){
+    if(nav)page('map',nav);
+    if(!map.hasLayer(layers.transport))map.addLayer(layers.transport);
+    document.getElementById('btnTransport')?.classList.add('on');
+    refreshDynamicLayers(true);
+    return;
+  }
+  if(kind==='kit'){
+    const safetyNav=document.querySelector('.nav button[onclick*="page(\'survival\'"]');
+    if(safetyNav)page('survival',safetyNav);
     return;
   }
   if(nav)page('map',nav);
