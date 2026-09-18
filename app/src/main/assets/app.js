@@ -58,7 +58,7 @@ kit:['Water','Long-life food','Documents and copies','Medication','First-aid kit
 }};
 let currentLang=localStorage.getItem('uaLang')||((navigator.language||'uk').toLowerCase().startsWith('ru')?'ru':((navigator.language||'uk').toLowerCase().startsWith('en')?'en':'uk'));
 function t(k){return (I18N[currentLang]&&I18N[currentLang][k])||I18N.uk[k]||k}
-function setLanguage(lang){if(!I18N[lang])lang='uk';currentLang=lang;localStorage.setItem('uaLang',lang);document.documentElement.lang=lang;const sel=document.getElementById('langSelect');if(sel)sel.value=lang;document.querySelectorAll('[data-i18n]').forEach(el=>{const v=t(el.dataset.i18n);if(v)el.textContent=v});document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{el.placeholder=t(el.dataset.i18nPlaceholder)});renderKit();if(realtime)renderChat()}
+function setLanguage(lang){if(!I18N[lang])lang='uk';currentLang=lang;localStorage.setItem('uaLang',lang);document.documentElement.lang=lang;const sel=document.getElementById('langSelect');if(sel)sel.value=lang;document.querySelectorAll('[data-i18n]').forEach(el=>{const v=t(el.dataset.i18n);if(v)el.textContent=v});document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{el.placeholder=t(el.dataset.i18nPlaceholder)});if(window.renderKit)window.renderKit();if(realtime)renderChat()}
 
 const cfg=window.UA_CONFIG||{};let selectedType='danger',currentChannel='general',sb=null,realtime=false;
 const map=L.map('map',{zoomControl:false}).setView([49.0,31.2],6);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);L.control.zoom({position:'bottomleft'}).addTo(map);
@@ -81,7 +81,7 @@ function typeLabel(x){return ({power:t('powerLabel'),heating:t('heatingLabel'),w
 function renderAlert(a){const verified=(a.confirmations||0)>=3&&(a.confirmations||0)>(a.rejections||0);const label=verified?t('verified'):t('unverified');const cls=verified?'verified':'unverified';const util=isUtilityType(a.type);const target=util?utilityCommunity:layers.community;const ic=util?(icons[a.type]||icons.community):icons.community;const m=L.marker([a.lat,a.lng],{icon:ic}).addTo(target);m.bindPopup('<b>'+esc(typeLabel(a.type))+'</b><br>'+esc(a.text)+'<br><span class="'+cls+'">'+label+'</span><br><button onclick="voteAlert(\''+esc(a.id)+'\',true)">✓ Підтвердити</button> <button onclick="voteAlert(\''+esc(a.id)+'\',false)">✕ Спростувати</button>')}
 async function voteAlert(id,ok){if(!realtime){alert('Голосування між користувачами активується після підключення realtime-сервера.');return}const device=getDeviceId();const {error}=await sb.from('alert_votes').upsert({alert_id:id,device_id:device,vote:ok?1:-1},{onConflict:'alert_id,device_id'});if(error)alert(t('voteFailed'))}
 function getDeviceId(){let id=localStorage.getItem('deviceId');if(!id){id=crypto.randomUUID?crypto.randomUUID():('dev-'+Date.now()+'-'+Math.random());localStorage.setItem('deviceId',id)}return id}
-async function initBackend(){if(!cfg.supabaseUrl||!cfg.supabaseAnonKey){setStatus(false);loadLocalAlerts();renderChat();return}try{sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);const {error}=await sb.from('community_alerts').select('id',{head:true,count:'exact'});if(error)throw error;realtime=true;setStatus(true);await Promise.all([syncAlerts(),syncUtilities()]);subscribeRealtime();await renderChat()}catch(e){console.warn(e);realtime=false;setStatus(false);loadLocalAlerts();renderChat()}}
+async function initBackend(){if(!cfg.supabaseUrl||!cfg.supabaseAnonKey){setStatus(false);loadLocalAlerts();renderChat();return}try{if(!sb)sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);const {error}=await sb.from('community_alerts').select('id',{head:true,count:'exact'});if(error)throw error;realtime=true;setStatus(true);await Promise.all([syncAlerts(),syncUtilities()]);subscribeRealtime();await renderChat()}catch(e){console.warn(e);realtime=false;setStatus(false);loadLocalAlerts();renderChat()}}
 function setStatus(live){const e=document.getElementById('backendStatus');e.textContent=live?t('realtime'):t('offline');e.classList.toggle('live',live)}
 function loadLocalAlerts(){try{JSON.parse(localStorage.getItem('alerts')||'[]').forEach(renderAlert)}catch(e){}}
 async function syncAlerts(){layers.community.clearLayers();utilityCommunity.clearLayers();const {data}=await sb.from('community_alerts').select('*').gte('created_at',new Date(Date.now()-24*3600e3).toISOString()).order('created_at',{ascending:false}).limit(300);(data||[]).forEach(renderAlert)}
@@ -111,6 +111,6 @@ async function checkRegionalAccess(){
     title.textContent=t('gateChecking');txt.textContent=t('gateNeedLocation');retry.style.display='inline-block';return;
   }
   gate.classList.add('hidden');
-  if(!appStarted){appStarted=true;renderKit();await initBackend();loadShelters();}
+  if(!appStarted){appStarted=true;if(window.startAuthFlow){await window.startAuthFlow()}else{if(window.renderKit)window.renderKit();await initBackend();loadShelters();}}
 }
-setLanguage(currentLang);checkRegionalAccess();
+setLanguage(currentLang);setTimeout(()=>checkRegionalAccess(),0);
