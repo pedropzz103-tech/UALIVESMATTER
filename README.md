@@ -2,42 +2,68 @@
 
 Android civilian-safety and community app for Ukraine.
 
-## v0.5
-- Clean mobile social design inspired by open-source GitHub UI patterns
-- Required email/password accounts with Supabase Auth
-- Native Android deep-link handler for email confirmation
-- Community feed with photo/video posts
-- 24-hour Stories
-- Tinder-style swipe actions on feed cards
-- Vector bottom navigation
-- Full-bleed OpenStreetMap + Leaflet map
-- Lazy viewport loading for shelters and transport to reduce map load
-- Community alerts with confirmation/rejection
-- Electricity, heating and water outage alerts
-- Nearby alert notifications
-- General and regional realtime chat
-- Editable per-user emergency checklist
-- SOS and emergency numbers
+## v0.6
+- UA-State-inspired safety dashboard
+- Live air-alert polygons using NEPTUN region GeoJSON + alert snapshot API
+- Civilian risk zones rendered as red / orange / yellow overlays
+- Community reports feed into risk overlays in realtime
+- Backend support for curated civil-risk GeoJSON polygons
+- Safer-route mode using OSRM route alternatives and current app risk overlays
+- One-tap route to nearest civilian bomb shelter from OpenStreetMap
+- Tap-anywhere destination route mode
+- Full-bleed Leaflet map with floating controls and legend
+- Shelters, public transport, electricity, water and heating layers
+- Verified-help section with Ukrainian Red Cross, UNHCR Ukraine and UNITED24
+- Emergency-kit shortcut and editable per-user checklist
+- Photo/video feed, Stories, chat, accounts and profiles retained from v0.5
 - Ukrainian, Russian and English UI
-- Regional app lock when Android geolocation resolves the device country as RU
+- Android deep-link handler for email confirmation
+- App remains locked when Android geolocation resolves the device country as RU
+
+## Important route behavior
+The route feature is informational. It requests alternative road routes and scores the returned alternatives against the risk areas currently visible to the app. It is **not** an official evacuation order and cannot guarantee that a road is open or safe.
+
+The project deliberately does not expose live troop positions, bases, military vehicle movements or other operational military tracking.
+
+## Air-alert data
+The app uses NEPTUN's open alert API and its matching oblast/raion GeoJSON boundaries. NEPTUN attribution is displayed on the map. NEPTUN is an informational aggregator and does not replace official civil-defense alerts.
+
+## Shelters
+The general shelter search uses civilian OpenStreetMap objects tagged:
+`amenity=shelter + shelter_type=bomb_shelter`
+
+Kyiv's official open-data shelter layer remains supported separately where available.
+
+## Verified resources
+The backend currently lists:
+- Ukrainian Red Cross
+- UNHCR Ukraine
+- UNITED24
+
+These entries link to the organizations' official websites. The app does not process donations itself.
 
 ## Email confirmation redirect
 The Android app accepts:
 
 `ualivesmatter://auth/callback`
 
-Signup requests already send this as their `emailRedirectTo`.
+Signup requests send this as their `emailRedirectTo`.
 
-Supabase also requires this callback to be included in the project's **Auth → URL Configuration → Additional Redirect URLs**. The current ChatGPT Supabase connector does not expose that dashboard setting, so it must be added once in the Supabase dashboard. Without it Supabase falls back to the project's Site URL, which can appear as localhost.
+Supabase also requires this callback in **Auth → URL Configuration → Additional Redirect URLs**. If it is missing, Supabase may fall back to the project Site URL.
 
-## Map performance
-Map-heavy layers are not loaded globally anymore. Shelters and public transport are fetched only for the current viewport and useful zoom levels, and pending requests are cancelled when the map moves.
+## Backend
+Supabase stores:
+- accounts / profiles
+- posts, Stories and likes
+- realtime chat
+- community alerts and votes
+- utility incidents
+- editable checklists
+- civil risk zones
+- evacuation points
+- verified help resources
 
-## Design references
-See `docs/DESIGN_REFERENCES.md`.
-
-## Safety scope
-Civilian-safety only. Do not expose real-time troop positions, military movements, bases, vehicles or other operational military data.
+SQL migrations live under `backend/`.
 
 ## Build
-GitHub Actions validates embedded JavaScript and produces a debug APK artifact on every push to `main`.
+GitHub Actions validates all embedded JavaScript and produces a debug APK artifact on every push to `main`.
