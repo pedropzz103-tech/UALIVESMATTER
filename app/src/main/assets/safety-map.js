@@ -114,6 +114,8 @@ const safetyLayers={
   routeAlternatives:L.layerGroup().addTo(map)
 };
 let riskAreas=[];
+let frontlineGeo=null;
+let frontlineSegments=[];
 let airGeo={oblasts:null,raions:null};
 let airAlertsSnapshot={raions:[],oblasts:[]};
 let airRefreshTimer=null;
@@ -170,7 +172,7 @@ function addAirFeature(feature,kind,since,level='red'){
     opacity:.95
   };
   const layer=L.geoJSON(feature,{style}).addTo(safetyLayers.air);
-  const name=feature.properties?.name_uk||feature.properties?.name||feature.properties?.name_en||'Air alert';
+  const name=feature.properties?.name_uk||feature.properties?.region||feature.properties?.rayon||feature.properties?.name||feature.properties?.name_en||'Air alert';
   const when=since?new Date(since).toLocaleTimeString(currentLang==='uk'?'uk-UA':currentLang==='ru'?'ru-RU':'en-GB',{hour:'2-digit',minute:'2-digit'}):'';
   layer.bindPopup('<b>'+esc(t('airAlertsCard'))+'</b><br>'+esc(name)+(when?'<br><small>'+when+'</small>':'')+'<br><small>NEPTUN · '+esc(t('infoOnly'))+'</small>');
   layer.eachLayer(x=>{
@@ -212,6 +214,55 @@ function updateAirDashboardCount(){
   card.textContent=n?((currentLang==='uk'?'Активні: ':currentLang==='ru'?'Активные: ':'Active: ')+n):t('liveMap');
 }
 
+function collectFrontlineSegments(geo){
+  const segments=[];
+  const pushLine=(coords)=>{
+    if(!Array.isArray(coords))return;
+    for(let i=1;i<coords.length;i+=2){
+      const a=coords[i-1],b=coords[i];
+      if(Array.isArray(a)&&Array.isArray(b)&&a.length>=2&&b.length>=2){
+        segments.push([a,b]);
+      }
+    }
+  };
+  for(const f of geo?.features||[]){
+    const g=f?.geometry;
+    if(!g)continue;
+    if(g.type==='LineString')pushLine(g.coordinates);
+    if(g.type==='MultiLineString')for(const line of g.coordinates||[])pushLine(line);
+  }
+  return segments;
+}
+async function loadFrontlineRisk(){
+  try{
+    if(!frontlineGeo)frontlineGeo=await safetyData('frontline');
+    if(!frontlineGeo?.features?.length)return;
+    frontlineSegments=collectFrontlineSegments(frontlineGeo);
+
+    L.geoJSON(frontlineGeo,{
+      interactive:true,
+      style:{color:'#e13b4b',weight:34,opacity:.13,lineCap:'round',lineJoin:'round'}
+    }).addTo(safetyLayers.risk)
+      .bindPopup('<b>'+(currentLang==='uk'?'Узагальнена зона поблизу лінії фронту':currentLang==='ru'?'Обобщённая зона возле линии фронта':'Generalized frontline vicinity')+'</b><br><small>OCHA · 29 Jul 2026 · '+esc(t('infoOnly'))+'</small>');
+
+    L.geoJSON(frontlineGeo,{
+      interactive:false,
+      style:{color:'#d82f42',weight:3,opacity:.75,dashArray:'7 6',lineCap:'round'}
+    }).addTo(safetyLayers.risk);
+  }catch(e){console.warn('frontline risk unavailable',e)}
+}
+function pointSegmentKm(lat,lon,a,b){
+  const refLat=(lat+(a[1]||lat)+(b[1]||lat))/3*Math.PI/180;
+  const kx=111.32*Math.cos(refLat),ky=110.57;
+  const ax=(a[0]-lon)*kx,ay=(a[1]-lat)*ky;
+  const bx=(b[0]-lon)*kx,by=(b[1]-lat)*ky;
+  const vx=bx-ax,vy=by-ay;
+  const len=vx*vx+vy*vy;
+  let q=0;
+  if(len>0)q=Math.max(0,Math.min(1,-(ax*vx+ay*vy)/len));
+  const x=ax+q*vx,y=ay+q*vy;
+  return Math.sqrt(x*x+y*y);
+}
 async function refreshRiskZones(){
   safetyLayers.risk.clearLayers();
   riskAreas=riskAreas.filter(x=>x.source==='air');
@@ -257,6 +308,7 @@ async function refreshRiskZones(){
       });
     }
   }catch(e){console.warn('risk zones unavailable',e)}
+  await loadFrontlineRisk();
 }
 window.refreshRiskZones=refreshRiskZones;
 window.loadAirAlertZones=loadAirAlertZones;
@@ -275,6 +327,12 @@ function routeRiskScore(route){
       }else if(area.kind==='bounds'&&area.bounds?.contains([lat,lng])){
         score+=area.severity*area.severity*3;
       }
+    }
+    for(const seg of frontlineSegments){
+      const d=pointSegmentKm(lat,lng,seg[0],seg[1]);
+      if(d<=15)score+=80;
+      else if(d<=30)score+=35;
+      else if(d<=50)score+=10;
     }
   }
   return score;
