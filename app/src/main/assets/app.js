@@ -61,17 +61,57 @@ function t(k){return (I18N[currentLang]&&I18N[currentLang][k])||I18N.uk[k]||k}
 function setLanguage(lang){if(!I18N[lang])lang='uk';currentLang=lang;localStorage.setItem('uaLang',lang);document.documentElement.lang=lang;const sel=document.getElementById('langSelect');if(sel)sel.value=lang;document.querySelectorAll('[data-i18n]').forEach(el=>{const v=t(el.dataset.i18n);if(v)el.textContent=v});document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{el.placeholder=t(el.dataset.i18nPlaceholder)});if(window.renderKit)window.renderKit();if(realtime)renderChat()}
 
 const cfg=window.UA_CONFIG||{};let selectedType='danger',currentChannel='general',sb=null,realtime=false;
-const map=L.map('map',{zoomControl:false}).setView([49.0,31.2],6);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);L.control.zoom({position:'bottomleft'}).addTo(map);
+const map=L.map('map',{zoomControl:false,preferCanvas:true,zoomSnap:.5,zoomDelta:.5}).setView([49.0,31.2],6);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:19,
+  updateWhenIdle:true,
+  keepBuffer:3,
+  attribution:'&copy; OpenStreetMap contributors'
+}).addTo(map);
+L.control.zoom({position:'bottomright'}).addTo(map);
 const utilityCommunity=L.layerGroup(),utilityOfficial=L.layerGroup();
 const layers={community:L.layerGroup().addTo(map),utilities:L.layerGroup([utilityCommunity,utilityOfficial]).addTo(map),shelter:L.layerGroup().addTo(map),transport:L.layerGroup(),official:L.layerGroup()};
+let mapVisible=false,mapRefreshTimer=null,shelterAbort=null,transportAbort=null,lastShelterKey='',lastTransportKey='';
 function icon(c){return L.divIcon({className:'',html:'<div class="'+c+'"></div>',iconSize:[18,18],iconAnchor:[9,9]})}
 const icons={community:icon('community-dot'),power:icon('power-dot'),heating:icon('heating-dot'),water:icon('water-dot'),shelter:icon('shelter-dot'),transport:icon('transport-dot'),official:icon('official-dot')};
 function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-function page(n,b){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById('p-'+n).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');if(n==='map')setTimeout(()=>map.invalidateSize(),80)}
-function toggleLayer(n,b){if(map.hasLayer(layers[n]))map.removeLayer(layers[n]);else map.addLayer(layers[n]);b.classList.toggle('on');if(n==='shelter'&&map.hasLayer(layers[n]))loadShelters();if(n==='transport'&&map.hasLayer(layers[n]))loadTransport();if(n==='official'&&map.hasLayer(layers[n]))loadOfficialAlerts()}
+function page(n,b){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.getElementById('p-'+n).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  mapVisible=n==='map';
+  if(mapVisible){
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      map.invalidateSize({pan:false});
+      refreshDynamicLayers();
+    }));
+  }
+}
+function toggleLayer(n,b){
+  if(map.hasLayer(layers[n]))map.removeLayer(layers[n]);else map.addLayer(layers[n]);
+  b.classList.toggle('on');
+  if(n==='official'&&map.hasLayer(layers[n]))loadOfficialAlerts();
+  if((n==='shelter'||n==='transport')&&map.hasLayer(layers[n]))refreshDynamicLayers(true);
+}
+function scheduleMapRefresh(){
+  if(!mapVisible)return;
+  clearTimeout(mapRefreshTimer);
+  mapRefreshTimer=setTimeout(()=>refreshDynamicLayers(),320);
+}
+map.on('moveend zoomend',scheduleMapRefresh);
 function openAlert(){document.getElementById('alertSheet').classList.add('open')}function closeAlert(){document.getElementById('alertSheet').classList.remove('open')}function pickType(el,t){selectedType=t;document.querySelectorAll('.type').forEach(x=>x.classList.remove('sel'));el.classList.add('sel')}
 function nativeLoc(){try{let r=window.Android?.getLastKnownLocation?.();return r?JSON.parse(r):null}catch(e){return null}}
-function locateMe(){const p=nativeLoc();if(p){map.setView([p.lat,p.lng],15);L.circleMarker([p.lat,p.lng],{radius:7,color:'#fff',weight:3,fillColor:'#2f8cff',fillOpacity:1}).addTo(map).bindPopup(t('myPosition')).openPopup();loadNearbyShelters(p.lat,p.lng)}else alert(t('locationUnavailable'))}
+let myLocationMarker=null;
+function locateMe(){
+  const p=nativeLoc();
+  if(!p){alert(t('locationUnavailable'));return}
+  map.setView([p.lat,p.lng],15,{animate:true});
+  if(myLocationMarker)map.removeLayer(myLocationMarker);
+  myLocationMarker=L.circleMarker([p.lat,p.lng],{radius:7,color:'#fff',weight:3,fillColor:'#0a7aff',fillOpacity:1})
+    .addTo(map).bindPopup(t('myPosition')).openPopup();
+  refreshDynamicLayers(true);
+}
 function showPosition(){const p=nativeLoc();document.getElementById('myPos').textContent=p?('Lat: '+p.lat.toFixed(5)+' · Lng: '+p.lng.toFixed(5)):t('locationUnavailable')}
 function dial(n){try{if(window.Android?.callEmergency){Android.callEmergency(n);return}}catch(e){}window.location.href='tel:'+n}
 function rounded(v){return Math.round(v*1000)/1000}
@@ -90,10 +130,96 @@ async function switchChannel(ch,b){currentChannel=ch;document.querySelectorAll('
 async function renderChat(){const box=document.getElementById('messages');box.innerHTML='';if(realtime){const {data}=await sb.from('chat_messages').select('*').eq('channel',currentChannel).order('created_at',{ascending:false}).limit(80);(data||[]).reverse().forEach(appendMessage)}else{let all=JSON.parse(localStorage.getItem('chat')||'[]');all.filter(x=>x.channel===currentChannel).forEach(appendMessage);if(!all.length)appendMessage({display_name:'UA LIVES MATTER',text:currentLang==='en'?'Realtime chat is temporarily unavailable.':(currentLang==='ru'?'Realtime-чат временно недоступен.':'Realtime-чат тимчасово недоступний.'),created_at:new Date().toISOString()})}}
 function appendMessage(m){const box=document.getElementById('messages'),d=document.createElement('div');d.className='msg';d.innerHTML='<b>'+esc(m.display_name||t('user'))+'</b><p>'+esc(m.text||'')+'</p><div class="meta">'+new Date(m.created_at||Date.now()).toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'})+'</div>';box.appendChild(d);box.scrollTop=box.scrollHeight}
 async function sendChat(){const i=document.getElementById('chatInput'),t=i.value.trim();if(!t)return;const m={channel:currentChannel,display_name:t('user'),text:t,device_id:getDeviceId(),created_at:new Date().toISOString()};if(realtime){const {error}=await sb.from('chat_messages').insert(m);if(error){alert(t('sendFailed'));return}}else{let all=JSON.parse(localStorage.getItem('chat')||'[]');all.push(m);localStorage.setItem('chat',JSON.stringify(all));appendMessage(m)}i.value=''}
-let shelterLoaded=false;async function loadShelters(){if(shelterLoaded)return;shelterLoaded=true;await Promise.allSettled([loadKyivShelters(),loadNearbyShelters(map.getCenter().lat,map.getCenter().lng)])}
-async function loadKyivShelters(){try{const r=await fetch(cfg.kyivSheltersUrl);if(!r.ok)throw 0;const g=await r.json();L.geoJSON(g,{pointToLayer:(f,ll)=>L.marker(ll,{icon:icons.shelter}),onEachFeature:(f,l)=>{const p=f.properties||{};l.bindPopup('<b>'+t('officialShelter')+' · Kyiv</b><br>'+esc(p.address||p.Adress||p.name||p.type_building||'')+'<br><small>'+t('source')+': Kyiv Open Data</small>')}}).addTo(layers.shelter)}catch(e){console.warn('Kyiv shelters unavailable',e)}}
-async function loadNearbyShelters(lat,lng){try{const q='[out:json][timeout:20];(nwr(around:25000,'+lat+','+lng+')[amenity=shelter][shelter_type=bomb_shelter];nwr(around:25000,'+lat+','+lng+')[military=bunker][bunker_type=bomb_shelter];);out center tags;';const r=await fetch(cfg.overpassUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)});const j=await r.json();(j.elements||[]).forEach(e=>{const la=e.lat??e.center?.lat,lo=e.lon??e.center?.lon;if(!la||!lo)return;L.marker([la,lo],{icon:icons.shelter}).addTo(layers.shelter).bindPopup('<b>OpenStreetMap shelter</b><br>'+esc(e.tags?.name||e.tags?.['name:uk']||'Bomb shelter')+'<br><small>'+t('checkAvailability')+'</small>')})}catch(e){console.warn('OSM shelters unavailable',e)}}
-let transportLoaded=false;async function loadTransport(){if(transportLoaded)return;transportLoaded=true;const c=map.getCenter();try{const q='[out:json][timeout:20];(nwr(around:15000,'+c.lat+','+c.lng+')[railway=station];nwr(around:15000,'+c.lat+','+c.lng+')[public_transport=station];nwr(around:15000,'+c.lat+','+c.lng+')[highway=bus_stop];);out center tags;';const r=await fetch(cfg.overpassUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)});const j=await r.json();(j.elements||[]).slice(0,250).forEach(e=>{const la=e.lat??e.center?.lat,lo=e.lon??e.center?.lon;if(!la||!lo)return;L.marker([la,lo],{icon:icons.transport}).addTo(layers.transport).bindPopup('<b>'+t('transport')+'</b><br>'+esc(e.tags?.name||'Station / stop')+'<br><small>'+t('osmTransport')+'</small>')})}catch(e){}}
+let shelterLoaded=false;
+function viewportKey(prefix){
+  const c=map.getCenter(),z=Math.floor(map.getZoom());
+  return prefix+':'+z+':'+c.lat.toFixed(2)+':'+c.lng.toFixed(2);
+}
+async function refreshDynamicLayers(force=false){
+  if(!mapVisible)return;
+  if(map.hasLayer(layers.shelter))await loadSheltersForView(force);
+  if(map.hasLayer(layers.transport))await loadTransportForView(force);
+}
+async function loadShelters(){return loadSheltersForView(true)}
+async function loadSheltersForView(force=false){
+  const zoom=map.getZoom();
+  if(zoom<9){layers.shelter.clearLayers();lastShelterKey='';return}
+  const key=viewportKey('s');
+  if(!force&&key===lastShelterKey)return;
+  lastShelterKey=key;
+  if(shelterAbort)shelterAbort.abort();
+  shelterAbort=new AbortController();
+  const signal=shelterAbort.signal;
+  const bounds=map.getBounds();
+  const south=bounds.getSouth(),west=bounds.getWest(),north=bounds.getNorth(),east=bounds.getEast();
+  const next=[];
+  try{
+    const q='[out:json][timeout:15];(nwr('+south+','+west+','+north+','+east+')[amenity=shelter][shelter_type=bomb_shelter];nwr('+south+','+west+','+north+','+east+')[military=bunker][bunker_type=bomb_shelter];);out center tags;';
+    const osm=await fetch(cfg.overpassUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q),signal});
+    if(osm.ok){
+      const j=await osm.json();
+      (j.elements||[]).slice(0,180).forEach(e=>{
+        const la=e.lat??e.center?.lat,lo=e.lon??e.center?.lon;if(!la||!lo)return;
+        const m=L.marker([la,lo],{icon:icons.shelter}).bindPopup('<b>OpenStreetMap shelter</b><br>'+esc(e.tags?.name||e.tags?.['name:uk']||'Shelter')+'<br><small>'+t('checkAvailability')+'</small>');
+        next.push(m);
+      });
+    }
+  }catch(e){if(e.name!=='AbortError')console.warn('OSM shelters unavailable',e)}
+  try{
+    const kyivBox={s:50.18,w:30.18,n:50.62,e:30.85};
+    const intersects=!(east<kyivBox.w||west>kyivBox.e||north<kyivBox.s||south>kyivBox.n);
+    if(intersects&&zoom>=11){
+      const base=(cfg.kyivSheltersUrl||'').split('?')[0];
+      const params=new URLSearchParams({
+        where:'1=1',outFields:'*',returnGeometry:'true',f:'geojson',
+        geometry:[west,south,east,north].join(','),
+        geometryType:'esriGeometryEnvelope',
+        inSR:'4326',spatialRel:'esriSpatialRelIntersects',
+        resultRecordCount:'250'
+      });
+      const r=await fetch(base+'?'+params.toString(),{signal});
+      if(r.ok){
+        const g=await r.json();
+        L.geoJSON(g,{
+          pointToLayer:(feature,ll)=>L.marker(ll,{icon:icons.shelter}),
+          onEachFeature:(feature,layer)=>{
+            const p=feature.properties||{};
+            layer.bindPopup('<b>'+t('officialShelter')+' · Kyiv</b><br>'+esc(p.address||p.Adress||p.name||p.type_building||'')+'<br><small>'+t('source')+': Kyiv Open Data</small>');
+          }
+        }).eachLayer(layer=>next.push(layer));
+      }
+    }
+  }catch(e){if(e.name!=='AbortError')console.warn('Kyiv shelters unavailable',e)}
+  if(signal.aborted)return;
+  layers.shelter.clearLayers();
+  next.forEach(x=>x.addTo(layers.shelter));
+}
+async function loadNearbyShelters(){return loadSheltersForView(true)}
+async function loadTransport(){return loadTransportForView(true)}
+async function loadTransportForView(force=false){
+  const zoom=map.getZoom();
+  if(zoom<10){layers.transport.clearLayers();lastTransportKey='';return}
+  const key=viewportKey('t');
+  if(!force&&key===lastTransportKey)return;
+  lastTransportKey=key;
+  if(transportAbort)transportAbort.abort();
+  transportAbort=new AbortController();
+  const signal=transportAbort.signal;
+  const b=map.getBounds(),south=b.getSouth(),west=b.getWest(),north=b.getNorth(),east=b.getEast();
+  try{
+    const q='[out:json][timeout:15];(nwr('+south+','+west+','+north+','+east+')[railway=station];nwr('+south+','+west+','+north+','+east+')[public_transport=station];nwr('+south+','+west+','+north+','+east+')[highway=bus_stop];);out center tags;';
+    const r=await fetch(cfg.overpassUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q),signal});
+    if(!r.ok)return;
+    const j=await r.json();
+    if(signal.aborted)return;
+    layers.transport.clearLayers();
+    (j.elements||[]).slice(0,160).forEach(e=>{
+      const la=e.lat??e.center?.lat,lo=e.lon??e.center?.lon;if(!la||!lo)return;
+      L.marker([la,lo],{icon:icons.transport}).addTo(layers.transport)
+        .bindPopup('<b>'+t('transport')+'</b><br>'+esc(e.tags?.name||'Station / stop')+'<br><small>'+t('osmTransport')+'</small>');
+    });
+  }catch(e){if(e.name!=='AbortError')console.warn('transport unavailable',e)}
+}
 async function loadOfficialAlerts(){layers.official.clearLayers();if(!cfg.airAlertsProxy){L.marker([50.45,30.52],{icon:icons.official}).addTo(layers.official).bindPopup('<b>Офіційні тривоги</b><br>Потрібне підключення захищеного API-проксі.');return}try{const r=await fetch(cfg.airAlertsProxy);const data=await r.json();(data.states||data||[]).filter(x=>x.active||x.alert).forEach(x=>{if(x.lat&&x.lng)L.marker([x.lat,x.lng],{icon:icons.official}).addTo(layers.official).bindPopup('<b>Офіційна тривога</b><br>'+esc(x.name||x.region||''))})}catch(e){console.warn(e)}}
 async function syncUtilities(){utilityOfficial.clearLayers();if(!realtime)return;const {data,error}=await sb.from('utility_incidents').select('*').eq('status','active').order('created_at',{ascending:false}).limit(300);if(error){console.warn(error);return}(data||[]).forEach(renderUtilityIncident)}
 function renderUtilityIncident(x){if(!x.lat||!x.lng)return;const ic=icons[x.service]||icons.official;let eta=x.expected_restore_at?('<br><b>'+t('restoreExpected')+':</b> '+new Date(x.expected_restore_at).toLocaleString(currentLang==='uk'?'uk-UA':currentLang==='ru'?'ru-RU':'en-GB')):'';let src=x.source_name?('<br><small>'+t('source')+': '+esc(x.source_name)+'</small>'):'';L.marker([x.lat,x.lng],{icon:ic}).addTo(utilityOfficial).bindPopup('<b>'+esc(typeLabel(x.service))+'</b><br>'+esc(x.title||t('utilityIncident'))+(x.details?'<br>'+esc(x.details):'')+eta+src)}
