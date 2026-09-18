@@ -36,6 +36,7 @@ jobs:
         run: |
           node --check app/src/main/assets/app.js
           node --check app/src/main/assets/social.js
+          node --check app/src/main/assets/safety-map.js
 
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
@@ -43,6 +44,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ua-lives-matter-v0.5-debug
+          name: ua-lives-matter-v0.6-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
