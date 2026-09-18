@@ -2,7 +2,6 @@ package org.ualivesmatter.app
 
 import android.Manifest
 import android.app.Activity
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -22,6 +21,7 @@ import android.webkit.WebViewClient
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
+import org.json.JSONObject
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -30,9 +30,11 @@ class MainActivity : Activity() {
     private val permissionRequestCode = 1001
     private val fileChooserRequestCode = 2001
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
+    private var pendingDeepLink: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pendingDeepLink = intent?.dataString
 
         createNotificationChannel()
         requestRuntimePermissions()
@@ -47,6 +49,8 @@ class MainActivity : Activity() {
             setGeolocationEnabled(true)
             allowFileAccess = true
             mediaPlaybackRequiresUserGesture = false
+            loadWithOverviewMode = true
+            useWideViewPort = true
         }
 
         webView.addJavascriptInterface(AndroidBridge(this), "Android")
@@ -65,7 +69,7 @@ class MainActivity : Activity() {
             ): Boolean {
                 fileChooserCallback?.onReceiveValue(null)
                 fileChooserCallback = filePathCallback
-                val intent = try {
+                val chooserIntent = try {
                     fileChooserParams?.createIntent()
                 } catch (_: Exception) {
                     null
@@ -74,7 +78,7 @@ class MainActivity : Activity() {
                     type = "*/*"
                 }
                 return try {
-                    startActivityForResult(intent, fileChooserRequestCode)
+                    startActivityForResult(chooserIntent, fileChooserRequestCode)
                     true
                 } catch (_: Exception) {
                     fileChooserCallback?.onReceiveValue(null)
@@ -91,11 +95,39 @@ class MainActivity : Activity() {
                     startActivity(Intent(Intent.ACTION_DIAL, uri))
                     return true
                 }
+                if (uri.scheme == "ualivesmatter" && uri.host == "auth") {
+                    pendingDeepLink = uri.toString()
+                    deliverPendingDeepLink()
+                    return true
+                }
                 return false
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                deliverPendingDeepLink()
             }
         }
 
         webView.loadUrl("file:///android_asset/index.html")
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingDeepLink = intent?.dataString
+        deliverPendingDeepLink()
+    }
+
+    private fun deliverPendingDeepLink() {
+        if (!::webView.isInitialized) return
+        val link = pendingDeepLink ?: return
+        val quoted = JSONObject.quote(link)
+        webView.evaluateJavascript(
+            "window.handleAuthDeepLink && window.handleAuthDeepLink($quoted);",
+            null
+        )
+        pendingDeepLink = null
     }
 
     private fun requestRuntimePermissions() {
