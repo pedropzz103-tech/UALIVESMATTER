@@ -51,7 +51,10 @@
             <div class="dashboard-kicker">UA LIVES MATTER</div>
             <h2 data-i18n="everythingNeeded">Everything you need</h2>
           </div>
-          <button class="dashboard-sos" onclick="dial('112')">SOS</button>
+          <div class="dashboard-head-actions">
+            <button id="dashboardToggle" class="dashboard-toggle" onclick="toggleSafetyMenu()" aria-label="Minimize safety menu">−</button>
+            <button class="dashboard-sos" onclick="dial('112')">SOS</button>
+          </div>
         </div>
         <div class="dashboard-grid">
           <button class="feature-card air-card" onclick="openSafetyFeature('air')">
