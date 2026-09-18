@@ -2,47 +2,42 @@
 
 Android civilian-safety and community app for Ukraine.
 
-## v0.4
-- Required email/password account system with Supabase Auth
+## v0.5
+- Clean mobile social design inspired by open-source GitHub UI patterns
+- Required email/password accounts with Supabase Auth
+- Native Android deep-link handler for email confirmation
 - Community feed with photo/video posts
 - 24-hour Stories
-- Instagram-inspired clean interface with Tinder-style swipe gestures
-- OpenStreetMap + Leaflet safety map
-- Community safety alerts with confirmation/rejection
+- Tinder-style swipe actions on feed cards
+- Vector bottom navigation
+- Full-bleed OpenStreetMap + Leaflet map
+- Lazy viewport loading for shelters and transport to reduce map load
+- Community alerts with confirmation/rejection
 - Electricity, heating and water outage alerts
-- Nearby alert notifications while the app is open, plus background checks
+- Nearby alert notifications
 - General and regional realtime chat
-- Kyiv shelter layer + nearby OpenStreetMap shelters
-- Public transport/station layer
-- Editable per-user 72-hour emergency checklist
+- Editable per-user emergency checklist
 - SOS and emergency numbers
 - Ukrainian, Russian and English UI
 - Regional app lock when Android geolocation resolves the device country as RU
-- GitHub Actions APK build on every push
 
-## Backend
-Supabase project: `UALIVESMATTER`
+## Email confirmation redirect
+The Android app accepts:
 
-The backend contains:
-- profiles
-- posts
-- stories
-- post likes
-- realtime chat
-- community alerts and votes
-- verified utility incidents
-- per-user editable checklists
-- public social-media storage bucket
+`ualivesmatter://auth/callback`
 
-SQL migrations live under `backend/`.
+Signup requests already send this as their `emailRedirectTo`.
 
-## Notifications
-Foreground notifications are triggered instantly by Supabase Realtime when a new community or utility alert is within the configured radius.
+Supabase also requires this callback to be included in the project's **Auth → URL Configuration → Additional Redirect URLs**. The current ChatGPT Supabase connector does not expose that dashboard setting, so it must be added once in the Supabase dashboard. Without it Supabase falls back to the project's Site URL, which can appear as localhost.
 
-Android WorkManager also checks for nearby alerts periodically in the background. Android's periodic-work minimum interval is approximately 15 minutes, so this is a fallback rather than an instant push service.
+## Map performance
+Map-heavy layers are not loaded globally anymore. Shelters and public transport are fetched only for the current viewport and useful zoom levels, and pending requests are cancelled when the map moves.
+
+## Design references
+See `docs/DESIGN_REFERENCES.md`.
 
 ## Safety scope
 Civilian-safety only. Do not expose real-time troop positions, military movements, bases, vehicles or other operational military data.
 
 ## Build
-GitHub Actions produces a debug APK artifact on every push to `main`.
+GitHub Actions validates embedded JavaScript and produces a debug APK artifact on every push to `main`.
