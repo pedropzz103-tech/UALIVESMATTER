@@ -225,6 +225,16 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun openExternal(url: String) {
+            val activity = context as? Activity ?: return
+            activity.runOnUiThread {
+                try {
+                    activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                } catch (_: Exception) {}
+            }
+        }
+
+        @JavascriptInterface
         fun callEmergency(number: String) {
             val activity = context as? Activity ?: return
             activity.runOnUiThread {
