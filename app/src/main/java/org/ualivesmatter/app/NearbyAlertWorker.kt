@@ -15,8 +15,10 @@ import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
-import java.time.Instant
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 class NearbyAlertWorker(
     appContext: Context,
@@ -31,7 +33,7 @@ class NearbyAlertWorker(
 
         val prefs = context.getSharedPreferences("ualives", Context.MODE_PRIVATE)
         val lastCheck = prefs.getString("nearby_last_check", null)
-            ?: Instant.now().minusSeconds(15 * 60).toString()
+            ?: isoUtc(System.currentTimeMillis() - 15 * 60 * 1000L)
         var newest = lastCheck
 
         try {
@@ -142,6 +144,12 @@ class NearbyAlertWorker(
     }
 
     private fun enc(value: String): String = URLEncoder.encode(value, "UTF-8")
+
+    private fun isoUtc(millis: Long): String {
+        val fmt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+        fmt.timeZone = TimeZone.getTimeZone("UTC")
+        return fmt.format(Date(millis))
+    }
 
     private fun typeLabel(type: String): String = when (type) {
         "power" -> "⚡ Power outage nearby"
