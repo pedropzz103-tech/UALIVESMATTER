@@ -402,3 +402,26 @@ button{cursor:pointer}
   .route-action b{font-size:9px}
   .risk-legend{gap:5px;padding:6px 7px}
 }
+
+
+/* v0.6.1 collapsible safety dashboard */
+.dashboard-head-actions{display:flex;align-items:center;gap:8px}
+.dashboard-toggle{
+  width:38px;height:38px;border-radius:13px;border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.09);color:#fff;font-size:24px;line-height:1;
+  display:flex;align-items:center;justify-content:center;font-weight:500
+}
+.safety-dashboard.collapsed{
+  padding-bottom:9px;
+  background:linear-gradient(120deg,#101c35,#18284d);
+}
+.safety-dashboard.collapsed .dashboard-grid{display:none}
+.safety-dashboard.collapsed .dashboard-head{padding-bottom:4px;align-items:center}
+.safety-dashboard.collapsed .dashboard-head h2{font-size:17px;margin-top:0}
+.safety-dashboard.collapsed .dashboard-kicker{display:none}
+.safety-dashboard.collapsed .dashboard-sos{padding:7px 10px}
+.safety-dashboard.collapsed .dashboard-toggle{height:34px;width:34px;font-size:20px}
+
+/* Stronger visibility for map zones */
+.leaflet-overlay-pane svg{overflow:visible}
+#p-map .leaflet-interactive{transition:fill-opacity .16s ease,stroke-opacity .16s ease}
