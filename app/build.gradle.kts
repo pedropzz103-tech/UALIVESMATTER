@@ -11,8 +11,8 @@ android {
         applicationId = "org.ualivesmatter.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 9
-        versionName = "0.7.1"
+        versionCode = 10
+        versionName = "0.7.2"
     }
 
     buildTypes {
