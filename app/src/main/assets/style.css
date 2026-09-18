@@ -329,7 +329,9 @@ button{cursor:pointer}
 .risk-card{background:linear-gradient(135deg,#9e1d25,#e83c35)}
 .route-card{background:linear-gradient(135deg,#0066ce,#18a1dc)}
 .shelter-card{background:linear-gradient(135deg,#0c6d59,#1ea775)}
+.transport-card{background:linear-gradient(135deg,#4b2e83,#7452b8)}
 .utility-card{background:linear-gradient(135deg,#263246,#3b4c68)}
+.kit-card{background:linear-gradient(135deg,#a85a11,#df8b22)}
 .help-card{background:linear-gradient(135deg,#17419d,#225ad7)}
 
 /* v0.6 map risk + routing */
