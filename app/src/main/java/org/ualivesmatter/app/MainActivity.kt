@@ -2,26 +2,41 @@ package org.ualivesmatter.app
 
 import android.Manifest
 import android.app.Activity
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.LocationManager
 import android.location.Geocoder
-import java.util.Locale
+import android.location.LocationManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.webkit.JavascriptInterface
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequest
+import androidx.work.WorkManager
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class MainActivity : Activity() {
     private lateinit var webView: WebView
-    private val locationRequestCode = 1001
+    private val permissionRequestCode = 1001
+    private val fileChooserRequestCode = 2001
+    private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        createNotificationChannel()
+        requestRuntimePermissions()
+        scheduleNearbyAlertWorker()
 
         webView = WebView(this)
         setContentView(webView)
@@ -31,6 +46,7 @@ class MainActivity : Activity() {
             domStorageEnabled = true
             setGeolocationEnabled(true)
             allowFileAccess = true
+            mediaPlaybackRequiresUserGesture = false
         }
 
         webView.addJavascriptInterface(AndroidBridge(this), "Android")
@@ -41,7 +57,33 @@ class MainActivity : Activity() {
             ) {
                 callback?.invoke(origin, true, false)
             }
+
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                fileChooserCallback?.onReceiveValue(null)
+                fileChooserCallback = filePathCallback
+                val intent = try {
+                    fileChooserParams?.createIntent()
+                } catch (_: Exception) {
+                    null
+                } ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                }
+                return try {
+                    startActivityForResult(intent, fileChooserRequestCode)
+                    true
+                } catch (_: Exception) {
+                    fileChooserCallback?.onReceiveValue(null)
+                    fileChooserCallback = null
+                    false
+                }
+            }
         }
+
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val uri = request?.url ?: return false
@@ -53,17 +95,60 @@ class MainActivity : Activity() {
             }
         }
 
-        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ),
-                locationRequestCode
-            )
-        }
-
         webView.loadUrl("file:///android_asset/index.html")
+    }
+
+    private fun requestRuntimePermissions() {
+        val permissions = mutableListOf<String>()
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissions += Manifest.permission.ACCESS_FINE_LOCATION
+            permissions += Manifest.permission.ACCESS_COARSE_LOCATION
+        }
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            permissions += Manifest.permission.POST_NOTIFICATIONS
+        }
+        if (permissions.isNotEmpty()) {
+            requestPermissions(permissions.distinct().toTypedArray(), permissionRequestCode)
+        }
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channel = NotificationChannel(
+                NearbyAlertWorker.CHANNEL_ID,
+                "Nearby safety alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Community and utility alerts near your location"
+            }
+            manager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun scheduleNearbyAlertWorker() {
+        val request = PeriodicWorkRequest.Builder(
+            NearbyAlertWorker::class.java,
+            15,
+            TimeUnit.MINUTES
+        ).build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "nearby-safety-alerts",
+            ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == fileChooserRequestCode) {
+            val result = WebChromeClient.FileChooserParams.parseResult(resultCode, data)
+            fileChooserCallback?.onReceiveValue(result)
+            fileChooserCallback = null
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onBackPressed() {
@@ -73,31 +158,13 @@ class MainActivity : Activity() {
     class AndroidBridge(private val context: Context) {
         @JavascriptInterface
         fun getLastKnownLocation(): String {
-            if (context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
-            ) return ""
-
-            val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
-            val location = providers.mapNotNull {
-                try { manager.getLastKnownLocation(it) } catch (_: Exception) { null }
-            }.maxByOrNull { it.time } ?: return ""
-
+            val location = lastLocation(context) ?: return ""
             return "{\"lat\":${location.latitude},\"lng\":${location.longitude}}"
         }
 
         @JavascriptInterface
         fun getCountryCode(): String {
-            if (context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
-            ) return "UNKNOWN"
-
-            val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
-            val location = providers.mapNotNull {
-                try { manager.getLastKnownLocation(it) } catch (_: Exception) { null }
-            }.maxByOrNull { it.time } ?: return "UNKNOWN"
-
+            val location = lastLocation(context) ?: return "UNKNOWN"
             return try {
                 @Suppress("DEPRECATION")
                 val addresses = Geocoder(context, Locale.ENGLISH)
@@ -109,12 +176,43 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun setAuthToken(token: String) {
+            context.getSharedPreferences("ualives", Context.MODE_PRIVATE)
+                .edit().putString("auth_token", token).apply()
+        }
+
+        @JavascriptInterface
+        fun clearAuthToken() {
+            context.getSharedPreferences("ualives", Context.MODE_PRIVATE)
+                .edit().remove("auth_token").apply()
+        }
+
+        @JavascriptInterface
+        fun notifyNearbyAlert(title: String, message: String) {
+            NearbyAlertWorker.showNotification(context, title, message)
+        }
+
+        @JavascriptInterface
         fun callEmergency(number: String) {
             val activity = context as? Activity ?: return
             activity.runOnUiThread {
                 try {
                     activity.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number")))
                 } catch (_: Exception) {}
+            }
+        }
+
+        companion object {
+            private fun lastLocation(context: Context): android.location.Location? {
+                if (context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                    context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                ) return null
+                val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                return listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+                    .mapNotNull { provider ->
+                        try { manager.getLastKnownLocation(provider) } catch (_: Exception) { null }
+                    }
+                    .maxByOrNull { it.time }
             }
         }
     }
