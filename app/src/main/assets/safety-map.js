@@ -413,6 +413,7 @@ window.setLanguage=function(lang){
   updateAirDashboardCount();
 };
 
+window.setLanguage(currentLang);
 setTimeout(()=>{
   loadAirAlertZones(true);
   refreshRiskZones();
