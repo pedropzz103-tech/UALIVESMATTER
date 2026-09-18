@@ -81,6 +81,32 @@ cfg.neptunBase = cfg.neptunBase || 'https://neptun.in.ua';
 cfg.osrmBase = cfg.osrmBase || 'https://router.project-osrm.org';
 cfg.routeShelterSearchMeters = cfg.routeShelterSearchMeters || 20000;
 
+function toggleSafetyMenu(){
+  const el=document.querySelector('.safety-dashboard');
+  if(!el)return;
+  const collapsed=!el.classList.contains('collapsed');
+  el.classList.toggle('collapsed',collapsed);
+  localStorage.setItem('safetyMenuCollapsed',collapsed?'1':'0');
+  const btn=document.getElementById('dashboardToggle');
+  if(btn)btn.textContent=collapsed?'+':'−';
+}
+window.toggleSafetyMenu=toggleSafetyMenu;
+function restoreSafetyMenu(){
+  const collapsed=localStorage.getItem('safetyMenuCollapsed')==='1';
+  const el=document.querySelector('.safety-dashboard');
+  if(el)el.classList.toggle('collapsed',collapsed);
+  const btn=document.getElementById('dashboardToggle');
+  if(btn)btn.textContent=collapsed?'+':'−';
+}
+restoreSafetyMenu();
+
+async function safetyData(kind){
+  if(!sb)throw new Error('backend unavailable');
+  const {data,error}=await sb.functions.invoke(cfg.safetyDataFunction||'safety-data',{body:{kind}});
+  if(error)throw error;
+  return data;
+}
+
 const safetyLayers={
   risk:L.layerGroup().addTo(map),
   air:L.layerGroup().addTo(map),
@@ -122,26 +148,26 @@ window.openExternal=openExternal;
 
 async function loadAirGeo(){
   if(airGeo.oblasts&&airGeo.raions)return airGeo;
-  const [o,r]=await Promise.all([
-    fetch(cfg.neptunBase+'/oblasts.geojson',{cache:'force-cache'}),
-    fetch(cfg.neptunBase+'/raions.geojson',{cache:'force-cache'})
-  ]);
-  if(!o.ok||!r.ok)throw new Error('air-boundaries');
-  airGeo.oblasts=await o.json();
-  airGeo.raions=await r.json();
+  const [oblasts,raions]=await Promise.all([safetyData('oblasts'),safetyData('raions')]);
+  if(!oblasts?.features?.length||!raions?.features?.length)throw new Error('air-boundaries');
+  airGeo.oblasts=oblasts;
+  airGeo.raions=raions;
   return airGeo;
 }
 function featureKey(feature){
   const p=feature?.properties||{};
   return p.key||p.id||p.slug||p.code||p.oblast_key||p.raion_key||p.KEY||p.ID;
 }
-function addAirFeature(feature,kind,since){
+function addAirFeature(feature,kind,since,level='red'){
+  const yellow=level==='yellow';
+  const fill=yellow?'#f3b82f':'#e64252';
+  const edge=yellow?'#cc9317':(kind==='oblast'?'#c91f32':'#ea3f52');
   const style={
-    color:kind==='oblast'?'#c91f32':'#ea3f52',
-    weight:kind==='oblast'?1.2:1,
-    fillColor:'#e64252',
-    fillOpacity:kind==='oblast'?.29:.42,
-    opacity:.9
+    color:edge,
+    weight:kind==='oblast'?1.4:1.1,
+    fillColor:fill,
+    fillOpacity:kind==='oblast'?.36:.48,
+    opacity:.95
   };
   const layer=L.geoJSON(feature,{style}).addTo(safetyLayers.air);
   const name=feature.properties?.name_uk||feature.properties?.name||feature.properties?.name_en||'Air alert';
@@ -154,9 +180,8 @@ function addAirFeature(feature,kind,since){
 async function loadAirAlertZones(force=false){
   clearTimeout(airRefreshTimer);
   try{
-    const [geo,resp]=await Promise.all([loadAirGeo(),fetch(cfg.neptunBase+'/api/v1/alerts',{cache:'no-store'})]);
-    if(!resp.ok)throw new Error('alerts');
-    const data=await resp.json();
+    const [geo,data]=await Promise.all([loadAirGeo(),safetyData('alerts')]);
+    if(!Array.isArray(data?.raions)||!Array.isArray(data?.oblasts))throw new Error('alerts');
     airAlertsSnapshot={raions:data.raions||[],oblasts:data.oblasts||[]};
     safetyLayers.air.clearLayers();
     riskAreas=riskAreas.filter(x=>x.source!=='air');
@@ -166,14 +191,18 @@ async function loadAirAlertZones(force=false){
 
     for(const a of airAlertsSnapshot.oblasts){
       const f=oblastMap.get(String(a.key));
-      if(f)addAirFeature(f,'oblast',a.since);
+      if(f)addAirFeature(f,'oblast',a.since,a.level||'red');
     }
     for(const a of airAlertsSnapshot.raions){
       const f=raionMap.get(String(a.key));
-      if(f)addAirFeature(f,'raion',a.since);
+      if(f)addAirFeature(f,'raion',a.since,a.level||'red');
     }
     updateAirDashboardCount();
-  }catch(e){console.warn('air alerts unavailable',e)}
+  }catch(e){
+    console.warn('air alerts unavailable',e);
+    const credit=document.getElementById('mapAttribution');
+    if(credit)credit.textContent='Air alerts unavailable · OSM';
+  }
   airRefreshTimer=setTimeout(()=>loadAirAlertZones(),45000);
 }
 function updateAirDashboardCount(){
@@ -230,6 +259,7 @@ async function refreshRiskZones(){
   }catch(e){console.warn('risk zones unavailable',e)}
 }
 window.refreshRiskZones=refreshRiskZones;
+window.loadAirAlertZones=loadAirAlertZones;
 
 function routeRiskScore(route){
   const coords=route?.geometry?.coordinates||[];
