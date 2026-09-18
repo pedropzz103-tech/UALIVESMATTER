@@ -71,3 +71,10 @@ for each row execute function public.recount_alert_votes();
 alter publication supabase_realtime add table public.community_alerts;
 alter publication supabase_realtime add table public.alert_votes;
 alter publication supabase_realtime add table public.chat_messages;
+
+
+-- Security hardening for trigger function
+alter function public.recount_alert_votes() set search_path = public, pg_temp;
+revoke execute on function public.recount_alert_votes() from public;
+revoke execute on function public.recount_alert_votes() from anon;
+revoke execute on function public.recount_alert_votes() from authenticated;
