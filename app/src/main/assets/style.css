@@ -101,10 +101,12 @@ button{cursor:pointer}
 }
 .nav5{grid-template-columns:repeat(5,1fr)}
 .nav button{border:0;background:none;color:#8a96a4;font-size:10px;padding:7px 2px 4px;font-weight:650}
-.nav button span{display:block;font-size:20px;line-height:21px;margin-bottom:2px;filter:grayscale(.2)}
+.nav button span{display:block;line-height:21px;margin-bottom:2px}
+.nav-ico{width:21px;height:21px;margin:0 auto 2px}
+.nav-ico svg{width:21px;height:21px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .nav button b{display:block;font:inherit;font-size:9px}
 .nav button.active{color:#111a23}
-.nav button.active span{transform:translateY(-1px);filter:none}
+.nav button.active .nav-ico{transform:translateY(-1px)}
 
 /* Auth / regional gates */
 .access-gate{
