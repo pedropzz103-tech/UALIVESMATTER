@@ -50,8 +50,19 @@ class MainActivity : Activity() {
             isVerticalScrollBarEnabled = false
             isHorizontalScrollBarEnabled = false
             setBackgroundColor(Color.WHITE)
+            setOnApplyWindowInsetsListener { view, insets ->
+                @Suppress("DEPRECATION")
+                view.setPadding(
+                    0,
+                    insets.systemWindowInsetTop,
+                    0,
+                    insets.systemWindowInsetBottom
+                )
+                insets
+            }
         }
         setContentView(webView)
+        webView.requestApplyInsets()
 
         with(webView.settings) {
             javaScriptEnabled = true
