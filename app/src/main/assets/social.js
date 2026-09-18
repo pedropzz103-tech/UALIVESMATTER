@@ -105,6 +105,7 @@ async function afterAuthenticated(session){
   subscribeSocialRealtime();
   subscribeNearbyNotifications();
   updateProfileUI();
+  if(window.initSafetyMap)window.initSafetyMap();
   page('feed',document.getElementById('navFeed'));
 }
 
