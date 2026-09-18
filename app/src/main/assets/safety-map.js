@@ -308,7 +308,7 @@ window.buildSaferRoute=buildSaferRoute;
 async function findNearbySheltersForRoute(){
   const p=nativeLoc();
   if(!p)throw new Error('location');
-  const q='[out:json][timeout:20];(nwr(around:'+cfg.routeShelterSearchMeters+','+p.lat+','+p.lng+')[amenity=shelter][shelter_type=bomb_shelter];nwr(around:'+cfg.routeShelterSearchMeters+','+p.lat+','+p.lng+')[military=bunker][bunker_type=bomb_shelter];);out center tags;';
+  const q='[out:json][timeout:20];(nwr(around:'+cfg.routeShelterSearchMeters+','+p.lat+','+p.lng+')[amenity=shelter][shelter_type=bomb_shelter];);out center tags;';
   const r=await fetch(cfg.overpassUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)});
   if(!r.ok)throw new Error('shelter');
   const j=await r.json();
