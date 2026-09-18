@@ -85,6 +85,9 @@ function page(n,b){
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
       map.invalidateSize({pan:false});
       refreshDynamicLayers();
+      if(window.initSafetyMap)window.initSafetyMap();
+      if(window.loadAirAlertZones)window.loadAirAlertZones(true);
+      if(window.refreshRiskZones)window.refreshRiskZones();
     }));
   }
 }
