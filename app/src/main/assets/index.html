@@ -45,6 +45,35 @@
 
   <section id="p-feed" class="page active">
     <div class="feed-shell">
+      <div class="safety-dashboard">
+        <div class="dashboard-head">
+          <div>
+            <div class="dashboard-kicker">UA LIVES MATTER</div>
+            <h2 data-i18n="everythingNeeded">Everything you need</h2>
+          </div>
+          <button class="dashboard-sos" onclick="dial('112')">SOS</button>
+        </div>
+        <div class="dashboard-grid">
+          <button class="feature-card air-card" onclick="openSafetyFeature('air')">
+            <span class="feature-icon">◉</span><span><b data-i18n="airAlertsCard">Air alerts</b><small data-i18n="liveMap">Live map</small></span><i>›</i>
+          </button>
+          <button class="feature-card risk-card" onclick="openSafetyFeature('risk')">
+            <span class="feature-icon">▲</span><span><b data-i18n="riskMapCard">Risk map</b><small data-i18n="riskZones">Risk zones</small></span><i>›</i>
+          </button>
+          <button class="feature-card route-card" onclick="openSafetyFeature('route')">
+            <span class="feature-icon">↗</span><span><b data-i18n="safeRouteCard">Safer route</b><small data-i18n="toShelterOrPoint">Shelter or point</small></span><i>›</i>
+          </button>
+          <button class="feature-card shelter-card" onclick="openSafetyFeature('shelter')">
+            <span class="feature-icon">⌂</span><span><b data-i18n="sheltersCard">Shelters</b><small data-i18n="nearestShelters">Nearest shelters</small></span><i>›</i>
+          </button>
+          <button class="feature-card utility-card" onclick="openSafetyFeature('utilities')">
+            <span class="feature-icon">⌁</span><span><b data-i18n="utilitiesCard">Utilities</b><small data-i18n="powerWaterHeat">Power · water · heat</small></span><i>›</i>
+          </button>
+          <button class="feature-card help-card" onclick="openResourcesSheet()">
+            <span class="feature-icon">♥</span><span><b data-i18n="verifiedHelpCard">Verified help</b><small data-i18n="officialResources">Official resources</small></span><i>›</i>
+          </button>
+        </div>
+      </div>
       <div class="stories-wrap">
         <div class="story-add" onclick="openStorySheet()"><div class="story-ring add-ring">＋</div><span data-i18n="addStory">Story</span></div>
         <div id="stories" class="stories"></div>
@@ -62,13 +91,25 @@
 
   <section id="p-map" class="page">
     <div class="mapbar">
-      <button id="btnCommunity" class="chip on" onclick="toggleLayer('community',this)" data-i18n="community">⚠️ Спільнота</button>
-      <button id="btnUtilities" class="chip on" onclick="toggleLayer('utilities',this)" data-i18n="utilities">⚡💧 Комунальні</button>
+      <button id="btnRisk" class="chip on risk-chip" onclick="toggleSafetyLayer('risk',this)" data-i18n="riskZonesChip">Risk zones</button>
+      <button id="btnAir" class="chip on alert-chip" onclick="toggleSafetyLayer('air',this)" data-i18n="airAlertsChip">Air alerts</button>
       <button id="btnShelter" class="chip on" onclick="toggleLayer('shelter',this)" data-i18n="shelters">🛡️ Укриття</button>
+      <button id="btnUtilities" class="chip on" onclick="toggleLayer('utilities',this)" data-i18n="utilities">⚡💧 Комунальні</button>
       <button id="btnTransport" class="chip" onclick="toggleLayer('transport',this)" data-i18n="transport">🚇 Транспорт</button>
-      <button id="btnOfficial" class="chip" onclick="toggleLayer('official',this)" data-i18n="officialAlerts">📡 Тривоги</button>
+      <button id="btnCommunity" class="chip on" onclick="toggleLayer('community',this)" data-i18n="community">⚠️ Спільнота</button>
     </div>
     <div id="map"></div>
+    <div id="mapAttribution" class="map-data-credit">Air alerts: NEPTUN · OSM</div>
+    <div id="riskLegend" class="risk-legend">
+      <span><i class="risk-dot risk-red"></i><b data-i18n="highRisk">High</b></span>
+      <span><i class="risk-dot risk-orange"></i><b data-i18n="mediumRisk">Medium</b></span>
+      <span><i class="risk-dot risk-yellow"></i><b data-i18n="attentionRisk">Attention</b></span>
+    </div>
+    <div class="route-dock">
+      <button onclick="routeToNearestShelter()" class="route-action primary-route"><span>⌂</span><b data-i18n="nearestShelterRoute">Nearest shelter</b></button>
+      <button onclick="startDestinationMode()" class="route-action"><span>⌖</span><b data-i18n="chooseDestination">Choose destination</b></button>
+    </div>
+    <div id="routeStatus" class="route-status hidden"></div>
     <button class="loc" onclick="locateMe()">⌖</button>
     <button class="fab" onclick="openAlert()">＋</button>
   </section>
@@ -185,6 +226,23 @@
   <div class="row"><button class="chip grow" onclick="closeStorySheet()" data-i18n="cancel">Cancel</button><button class="send grow" onclick="createStory()" data-i18n="publish">Publish</button></div>
 </div></div>
 
+<div id="resourcesSheet" class="sheet" onclick="if(event.target===this)closeResourcesSheet()"><div class="sheetbox">
+  <h2 data-i18n="verifiedHelpTitle">Verified help & charities</h2>
+  <div class="small" data-i18n="verifiedHelpText">Official and verified resources. Opening a resource leaves the app.</div>
+  <div id="verifiedResources" class="resource-list"></div>
+  <button class="chip full" onclick="closeResourcesSheet()" data-i18n="close">Close</button>
+</div></div>
+
+<div id="routeSheet" class="sheet" onclick="if(event.target===this)closeRouteSheet()"><div class="sheetbox">
+  <h2 data-i18n="routeOptionsTitle">Safer route</h2>
+  <div class="small" data-i18n="routeDisclaimer">Informational route only. Follow official evacuation instructions and local authorities.</div>
+  <div id="routeSummary" class="route-summary"></div>
+  <div class="row">
+    <button class="chip grow" onclick="clearRoute()" data-i18n="clearRoute">Clear route</button>
+    <button class="send grow" onclick="closeRouteSheet()" data-i18n="done">Done</button>
+  </div>
+</div></div>
+
 <div id="storyViewer" class="story-viewer hidden" onclick="closeStoryViewer()">
   <button class="story-close">×</button>
   <div id="storyContent" class="story-content" onclick="event.stopPropagation()"></div>
@@ -195,5 +253,6 @@
 <script src="config.js"></script>
 <script src="app.js"></script>
 <script src="social.js"></script>
+<script src="safety-map.js"></script>
 </body>
 </html>
