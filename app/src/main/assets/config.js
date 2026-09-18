@@ -7,5 +7,8 @@ window.UA_CONFIG = {
   blockedCountryCodes: ["RU"],
   requireCountryCheck: true,
   nearbyAlertRadiusKm: 20,
-  authRedirectUrl: "ualivesmatter://auth/callback"
+  authRedirectUrl: "ualivesmatter://auth/callback",
+  neptunBase: "https://neptun.in.ua",
+  osrmBase: "https://router.project-osrm.org",
+  routeShelterSearchMeters: 20000
 };
