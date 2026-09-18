@@ -12,6 +12,10 @@ import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.graphics.Color
+import android.view.HapticFeedbackConstants
+import android.view.View
+import android.view.WindowInsetsController
 import android.webkit.JavascriptInterface
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -39,8 +43,14 @@ class MainActivity : Activity() {
         createNotificationChannel()
         requestRuntimePermissions()
         scheduleNearbyAlertWorker()
+        configureSystemBars()
 
-        webView = WebView(this)
+        webView = WebView(this).apply {
+            overScrollMode = View.OVER_SCROLL_NEVER
+            isVerticalScrollBarEnabled = false
+            isHorizontalScrollBarEnabled = false
+            setBackgroundColor(Color.WHITE)
+        }
         setContentView(webView)
 
         with(webView.settings) {
@@ -128,6 +138,23 @@ class MainActivity : Activity() {
             null
         )
         pendingDeepLink = null
+    }
+
+    private fun configureSystemBars() {
+        window.statusBarColor = Color.WHITE
+        window.navigationBarColor = Color.WHITE
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.setSystemBarsAppearance(
+                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
+                    WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
+                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
+                    WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility =
+                View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        }
     }
 
     private fun requestRuntimePermissions() {
@@ -222,6 +249,19 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun notifyNearbyAlert(title: String, message: String) {
             NearbyAlertWorker.showNotification(context, title, message)
+        }
+
+        @JavascriptInterface
+        fun haptic(style: String = "light") {
+            val activity = context as? Activity ?: return
+            activity.runOnUiThread {
+                val feedback = when (style.lowercase(Locale.ROOT)) {
+                    "strong" -> HapticFeedbackConstants.LONG_PRESS
+                    "tick" -> HapticFeedbackConstants.CLOCK_TICK
+                    else -> HapticFeedbackConstants.KEYBOARD_TAP
+                }
+                activity.window.decorView.performHapticFeedback(feedback)
+            }
         }
 
         @JavascriptInterface
