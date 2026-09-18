@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.location.Geocoder
+import java.util.Locale
 import android.net.Uri
 import android.os.Bundle
 import android.webkit.JavascriptInterface
@@ -82,6 +84,28 @@ class MainActivity : Activity() {
             }.maxByOrNull { it.time } ?: return ""
 
             return "{\"lat\":${location.latitude},\"lng\":${location.longitude}}"
+        }
+
+        @JavascriptInterface
+        fun getCountryCode(): String {
+            if (context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+            ) return "UNKNOWN"
+
+            val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+            val location = providers.mapNotNull {
+                try { manager.getLastKnownLocation(it) } catch (_: Exception) { null }
+            }.maxByOrNull { it.time } ?: return "UNKNOWN"
+
+            return try {
+                @Suppress("DEPRECATION")
+                val addresses = Geocoder(context, Locale.ENGLISH)
+                    .getFromLocation(location.latitude, location.longitude, 1)
+                addresses?.firstOrNull()?.countryCode?.uppercase(Locale.ROOT) ?: "UNKNOWN"
+            } catch (_: Exception) {
+                "UNKNOWN"
+            }
         }
 
         @JavascriptInterface
