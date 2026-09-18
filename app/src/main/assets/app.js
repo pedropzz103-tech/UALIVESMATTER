@@ -154,7 +154,7 @@ async function loadSheltersForView(force=false){
   const south=bounds.getSouth(),west=bounds.getWest(),north=bounds.getNorth(),east=bounds.getEast();
   const next=[];
   try{
-    const q='[out:json][timeout:15];(nwr('+south+','+west+','+north+','+east+')[amenity=shelter][shelter_type=bomb_shelter];nwr('+south+','+west+','+north+','+east+')[military=bunker][bunker_type=bomb_shelter];);out center tags;';
+    const q='[out:json][timeout:15];(nwr('+south+','+west+','+north+','+east+')[amenity=shelter][shelter_type=bomb_shelter];);out center tags;';
     const osm=await fetch(cfg.overpassUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q),signal});
     if(osm.ok){
       const j=await osm.json();
