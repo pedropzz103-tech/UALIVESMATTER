@@ -400,7 +400,11 @@ async function buildSaferRoute(dest,sourceLabel=''){
       '</div>'+
       '<div class="route-note">'+esc(note)+(sourceLabel?'<br><small>'+esc(sourceLabel)+'</small>':'')+'</div>';
     hideRouteStatus();
-    document.getElementById('routeSheet').classList.add('open');
+    if(window.presentApprovedRoute){
+      window.presentApprovedRoute(best.route,start,dest,{km,min,riskText,note,sourceLabel});
+    }else{
+      document.getElementById('routeSheet').classList.add('open');
+    }
   }catch(e){
     console.warn(e);
     showRouteStatus(t('routeFailed'));
@@ -423,7 +427,7 @@ async function findNearbySheltersForRoute(){
 }
 async function routeToNearestShelter(){
   const nav=document.querySelector('.nav button[onclick*="page(\'map\'"]');
-  if(nav)page('map',nav);
+  if(!window.presentApprovedRoute&&nav)page('map',nav);
   showRouteStatus(t('routeLoading'),true);
   try{
     const p=nativeLoc();if(!p)throw new Error('location');
