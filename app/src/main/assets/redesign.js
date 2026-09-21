@@ -317,6 +317,7 @@ const originalPage=window.page;
 window.page=function(name,button){
   originalPage(name,button);
   syncApprovedNav(name);
+  document.querySelector('.nav')?.classList.toggle('route-hidden',name==='shelters');
   if(name==='map'){
     setTimeout(()=>map.invalidateSize({pan:false}),20);
   }else if(name==='alerts'){
