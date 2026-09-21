@@ -2,6 +2,8 @@ name: Build Android APK
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -38,6 +40,7 @@ jobs:
           node --check app/src/main/assets/social.js
           node --check app/src/main/assets/safety-map.js
           node --check app/src/main/assets/polish.js
+          node --check app/src/main/assets/redesign.js
 
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
