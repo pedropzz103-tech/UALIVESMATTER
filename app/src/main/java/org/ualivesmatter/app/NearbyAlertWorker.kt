@@ -1,4 +1,4 @@
-package org.ualivesmatter.app
+package org.safekray.app
 
 import android.Manifest
 import android.app.Notification
