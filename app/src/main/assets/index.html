@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#07111d">
 <title>UA LIVES MATTER</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="style.css">
@@ -21,6 +22,7 @@
 <div id="authGate" class="access-gate hidden">
   <div class="gate-card auth-card">
     <div class="gate-logo"><b>UA</b> LIVES MATTER</div>
+    <div class="gate-kicker">SAFER PEOPLE · STRONGER TOMORROW</div>
     <h2 id="authTitle">Вхід</h2>
     <input id="authEmail" class="input" type="email" autocomplete="email" placeholder="Email">
     <input id="authPassword" class="input" type="password" autocomplete="current-password" placeholder="Password">
@@ -32,232 +34,316 @@
 </div>
 
 <div id="app">
-  <div class="top">
+  <header class="top">
     <div class="brand"><b>UA</b> LIVES MATTER</div>
     <div class="top-actions">
+      <span class="top-tag">CIVILIAN SAFETY</span>
+      <div id="backendStatus" class="status">OFFLINE</div>
+      <button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙</button>
       <button class="sos-mini" onclick="dial('112')">SOS</button>
       <select id="langSelect" class="lang" onchange="setLanguage(this.value)">
-        <option value="uk">UA</option><option value="ru">RU</option><option value="en">EN</option>
+        <option value="uk">UA</option><option value="en">EN</option><option value="ru">RU</option>
       </select>
-      <div id="backendStatus" class="status">OFFLINE</div>
     </div>
-  </div>
+  </header>
 
-  <section id="p-feed" class="page active">
-    <div class="feed-shell">
-      <div class="safety-dashboard">
-        <div class="dashboard-head">
-          <div>
-            <div class="dashboard-kicker">UA LIVES MATTER</div>
-            <h2 data-i18n="everythingNeeded">Everything you need</h2>
-          </div>
-          <div class="dashboard-head-actions">
-            <button id="dashboardToggle" class="dashboard-toggle" onclick="toggleSafetyMenu()" aria-label="Minimize safety menu">−</button>
-            <button class="dashboard-sos" onclick="dial('112')">SOS</button>
-          </div>
-        </div>
-        <div class="dashboard-grid">
-          <button class="feature-card air-card" onclick="openSafetyFeature('air')">
-            <span class="feature-icon">◉</span><span><b data-i18n="airAlertsCard">Air alerts</b><small data-i18n="liveMap">Live map</small></span><i>›</i>
-          </button>
-          <button class="feature-card risk-card" onclick="openSafetyFeature('risk')">
-            <span class="feature-icon">▲</span><span><b data-i18n="riskMapCard">Risk map</b><small data-i18n="riskZones">Risk zones</small></span><i>›</i>
-          </button>
-          <button class="feature-card route-card" onclick="openSafetyFeature('route')">
-            <span class="feature-icon">↗</span><span><b data-i18n="safeRouteCard">Safer route</b><small data-i18n="toShelterOrPoint">Shelter or point</small></span><i>›</i>
-          </button>
-          <button class="feature-card shelter-card" onclick="openSafetyFeature('shelter')">
-            <span class="feature-icon">⌂</span><span><b data-i18n="sheltersCard">Shelters</b><small data-i18n="nearestShelters">Nearest shelters</small></span><i>›</i>
-          </button>
-          <button class="feature-card transport-card" onclick="openSafetyFeature('transport')">
-            <span class="feature-icon">⇄</span><span><b data-i18n="transportCard">Transport</b><small data-i18n="stationsAndStops">Stations & stops</small></span><i>›</i>
-          </button>
-          <button class="feature-card utility-card" onclick="openSafetyFeature('utilities')">
-            <span class="feature-icon">⌁</span><span><b data-i18n="utilitiesCard">Utilities</b><small data-i18n="powerWaterHeat">Power · water · heat</small></span><i>›</i>
-          </button>
-          <button class="feature-card kit-card" onclick="openSafetyFeature('kit')">
-            <span class="feature-icon">✓</span><span><b data-i18n="emergencyKitCard">Emergency kit</b><small data-i18n="editableChecklistCard">Editable checklist</small></span><i>›</i>
-          </button>
-          <button class="feature-card help-card" onclick="openResourcesSheet()">
-            <span class="feature-icon">♥</span><span><b data-i18n="verifiedHelpCard">Verified help</b><small data-i18n="officialResources">Official resources</small></span><i>›</i>
-          </button>
-        </div>
-      </div>
-      <div class="stories-wrap">
-        <div class="story-add" onclick="openStorySheet()"><div class="story-ring add-ring">＋</div><span data-i18n="addStory">Story</span></div>
-        <div id="stories" class="stories"></div>
-      </div>
-      <div class="feed-actions">
-        <div>
-          <strong data-i18n="feedTitle">Community feed</strong>
-          <div class="small" data-i18n="feedHint">Swipe right to like, left to skip.</div>
-        </div>
-        <button class="send compact" onclick="openPostSheet()" data-i18n="newPost">＋ Post</button>
-      </div>
-      <div id="feedDeck" class="feed-deck"></div>
-    </div>
-  </section>
-
-  <section id="p-map" class="page">
-    <div class="mapbar">
-      <button id="btnRisk" class="chip on risk-chip" onclick="toggleSafetyLayer('risk',this)" data-i18n="riskZonesChip">Risk zones</button>
-      <button id="btnAir" class="chip on alert-chip" onclick="toggleSafetyLayer('air',this)" data-i18n="airAlertsChip">Air alerts</button>
-      <button id="btnShelter" class="chip on" onclick="toggleLayer('shelter',this)" data-i18n="shelters">🛡️ Укриття</button>
-      <button id="btnUtilities" class="chip on" onclick="toggleLayer('utilities',this)" data-i18n="utilities">⚡💧 Комунальні</button>
-      <button id="btnTransport" class="chip" onclick="toggleLayer('transport',this)" data-i18n="transport">🚇 Транспорт</button>
-      <button id="btnCommunity" class="chip on" onclick="toggleLayer('community',this)" data-i18n="community">⚠️ Спільнота</button>
-    </div>
+  <!-- MAP -->
+  <section id="p-map" class="page map-page active">
     <div id="map"></div>
-    <button id="mapAttribution" class="map-data-credit" onclick="openExternal('https://neptun.in.ua/')">NEPTUN alerts · OCHA frontline · OSM ↗</button>
+
+    <div class="map-search-wrap">
+      <div class="map-search">
+        <span>⌕</span>
+        <input id="mapSearchInput" placeholder="Search location (city, address…)" onkeydown="if(event.key==='Enter')searchMapLocation()">
+        <button onclick="searchMapLocation()">Go</button>
+      </div>
+    </div>
+
+    <div class="mapbar">
+      <button id="btnRisk" class="chip on risk-chip" onclick="toggleSafetyLayer('risk',this)">Risk</button>
+      <button id="btnAir" class="chip on alert-chip" onclick="toggleSafetyLayer('air',this)">Alerts</button>
+      <button id="btnShelter" class="chip on" onclick="toggleLayer('shelter',this)">Shelters</button>
+      <button id="btnUtilities" class="chip on" onclick="toggleLayer('utilities',this)">Utilities</button>
+      <button id="btnTransport" class="chip" onclick="toggleLayer('transport',this)">Transport</button>
+      <button id="btnCommunity" class="chip on" onclick="toggleLayer('community',this)">Community</button>
+    </div>
+
+    <div class="map-legend glass-card">
+      <div class="legend-title">MAP LAYERS</div>
+      <span><i class="legend-icon red">✈</i>Air raid alert</span>
+      <span><i class="legend-icon red">✦</i>Explosions / strikes</span>
+      <span><i class="legend-icon danger"></i>High-risk area</span>
+      <span><i class="legend-icon green">⌂</i>Shelter</span>
+      <span><i class="legend-icon blue">✚</i>Humanitarian aid</span>
+      <span><i class="legend-icon purple">⌁</i>Critical infrastructure</span>
+      <span><i class="legend-icon yellow">⚡</i>Power / water outage</span>
+    </div>
+
+    <button id="mapAttribution" class="map-data-credit" onclick="openExternal('https://neptun.in.ua/')">NEPTUN · OCHA · OSM ↗</button>
+
     <div id="riskLegend" class="risk-legend">
-      <span><i class="risk-dot risk-red"></i><b data-i18n="highRisk">High</b></span>
-      <span><i class="risk-dot risk-orange"></i><b data-i18n="mediumRisk">Medium</b></span>
-      <span><i class="risk-dot risk-yellow"></i><b data-i18n="attentionRisk">Attention</b></span>
+      <span><i class="risk-dot risk-red"></i>High</span>
+      <span><i class="risk-dot risk-orange"></i>Medium</span>
+      <span><i class="risk-dot risk-yellow"></i>Attention</span>
     </div>
-    <div class="route-dock">
-      <button onclick="routeToNearestShelter()" class="route-action primary-route"><span>⌂</span><b data-i18n="nearestShelterRoute">Nearest shelter</b></button>
-      <button onclick="startDestinationMode()" class="route-action"><span>⌖</span><b data-i18n="chooseDestination">Choose destination</b></button>
+
+    <div class="route-dock glass-card">
+      <button onclick="routeToNearestShelter()" class="route-action primary-route">
+        <span>⌂</span><b>Route to Safe Place</b><small>Nearest shelter</small>
+      </button>
+      <button onclick="startDestinationMode()" class="route-action">
+        <span>⌖</span><b>Choose destination</b><small>Tap the map</small>
+      </button>
     </div>
+
     <div id="routeStatus" class="route-status hidden"></div>
-    <button class="loc" onclick="locateMe()">⌖</button>
-    <button class="fab" onclick="openAlert()">＋</button>
+    <button class="loc" onclick="locateMe()" aria-label="My location">⌾</button>
+    <button class="fab" onclick="openAlert()" aria-label="New report">＋</button>
   </section>
 
-  <section id="p-chat" class="page">
-    <div class="scroll">
-      <div class="hero"><h2 data-i18n="chatsTitle">💬 Чати</h2><p data-i18n="chatsDesc">Загальний чат України та регіональні канали.</p></div>
-      <div class="card">
-        <div class="row channel-row">
-          <button class="chip on" data-channel="general" onclick="switchChannel('general',this)" data-i18n="general">🇺🇦 Загальний</button>
-          <button class="chip" data-channel="kyiv" onclick="switchChannel('kyiv',this)">Київ</button>
-          <button class="chip" data-channel="kharkiv" onclick="switchChannel('kharkiv',this)">Харків</button>
-          <button class="chip" data-channel="odesa" onclick="switchChannel('odesa',this)">Одеса</button>
-        </div>
+  <!-- ALERTS -->
+  <section id="p-alerts" class="page">
+    <div class="scroll approved-scroll">
+      <div class="screen-head">
+        <div><span class="eyebrow">REAL-TIME INFORMATION</span><h1>Alerts</h1></div>
+        <button class="icon-btn" onclick="refreshApprovedAlerts(true)">↻</button>
       </div>
-      <div class="card chat-box" id="messages"></div>
-      <div class="row">
-        <input id="chatInput" class="input grow" maxlength="280" data-i18n-placeholder="chatPlaceholder" placeholder="Напишіть повідомлення…">
-        <button class="send" onclick="sendChat()" data-i18n="send">Надіслати</button>
+
+      <div id="approvedEmergencyBanner" class="emergency-banner">
+        <div class="emergency-symbol">!</div>
+        <div class="grow"><b>Safety feed</b><p>Follow official instructions during an active emergency.</p></div>
+        <span class="pulse-dot"></span>
       </div>
-      <div class="notice" data-i18n="militaryWarning">Не публікуйте оперативні дані про військових, техніку або пересування.</div>
+
+      <div class="segmented" id="alertFilters">
+        <button class="active" onclick="setAlertFilter('all',this)">All</button>
+        <button onclick="setAlertFilter('nearby',this)">Nearby</button>
+        <button onclick="setAlertFilter('official',this)">Official</button>
+      </div>
+
+      <div id="approvedAlertList" class="alert-stack">
+        <div class="loading-card">Loading safety information…</div>
+      </div>
+
+      <button class="official-source-btn" onclick="openResourcesSheet()">View official & verified sources</button>
+      <div class="safety-disclaimer">UA LIVES MATTER is an informational civilian-safety tool. Always follow official alerts and local authorities.</div>
     </div>
   </section>
 
+  <!-- SHELTERS / ROUTE -->
+  <section id="p-shelters" class="page">
+    <div class="scroll approved-scroll">
+      <div class="screen-head">
+        <div><span class="eyebrow">ROUTE TO SAFE PLACE</span><h1>Shelters</h1></div>
+        <button class="icon-btn" onclick="refreshShelterPanel(true)">↻</button>
+      </div>
+
+      <div class="route-planner glass-card">
+        <div class="route-point"><i class="point blue"></i><div><small>Your location</small><b id="routeOriginLabel">Current position</b></div></div>
+        <div class="route-line"></div>
+        <div class="route-point"><i class="point green"></i><div><small>Destination</small><b>Nearest available shelter</b></div></div>
+
+        <div class="travel-modes">
+          <button class="active" data-route-mode="driving" onclick="setTravelMode('driving',this)">🚗</button>
+          <button data-route-mode="walking" onclick="setTravelMode('walking',this)">🚶</button>
+          <button data-route-mode="cycling" onclick="setTravelMode('cycling',this)">🚲</button>
+        </div>
+
+        <div class="route-recommendation">
+          <span class="route-star">✣</span>
+          <div class="grow"><b>Recommended route</b><small>Safety-scored against available risk layers</small></div>
+        </div>
+        <button class="send full route-start" onclick="routeToNearestShelter()">Start navigation</button>
+      </div>
+
+      <div class="section-title"><b>Nearby shelters</b><span id="shelterCount">—</span></div>
+      <div id="approvedShelterList" class="shelter-stack">
+        <div class="loading-card">Use location to find nearby shelters.</div>
+      </div>
+      <button class="secondary-action" onclick="page('map',document.getElementById('navMap'));setTimeout(locateMe,200)">Open shelter map</button>
+    </div>
+  </section>
+
+  <!-- UTILITIES -->
+  <section id="p-utilities" class="page">
+    <div class="scroll approved-scroll">
+      <div class="screen-head">
+        <div><span class="eyebrow">UTILITIES & INFRASTRUCTURE</span><h1>Service status</h1></div>
+        <button class="icon-btn" onclick="refreshUtilityPanel(true)">↻</button>
+      </div>
+
+      <div class="segmented utility-tabs">
+        <button class="active" onclick="switchUtilityTab('overview',this)">Overview</button>
+        <button onclick="switchUtilityTab('power',this)">Power</button>
+        <button onclick="switchUtilityTab('water',this)">Water</button>
+        <button onclick="switchUtilityTab('heating',this)">Heating</button>
+      </div>
+
+      <div class="ukraine-status-card glass-card">
+        <div class="status-map-title"><b>Ukraine overview</b><small id="utilityLastUpdate">Updating…</small></div>
+        <svg class="ukraine-svg" viewBox="0 0 620 340" role="img" aria-label="Ukraine service status overview">
+          <defs>
+            <linearGradient id="ukrStatus" x1="0" x2="1">
+              <stop offset="0%" stop-color="#239a63"/>
+              <stop offset="47%" stop-color="#e1a62e"/>
+              <stop offset="76%" stop-color="#d95b36"/>
+              <stop offset="100%" stop-color="#c7373f"/>
+            </linearGradient>
+          </defs>
+          <path d="M70 155 98 118 145 112 177 82 232 94 268 70 310 86 343 72 390 90 428 82 450 108 496 106 526 132 558 138 548 168 578 190 538 212 514 246 466 238 436 260 385 252 352 272 313 252 278 266 244 242 205 250 176 229 132 234 112 210 78 205 55 181Z" fill="url(#ukrStatus)" stroke="#2f4359" stroke-width="5"/>
+          <g class="city-dot"><circle cx="180" cy="151" r="7"/><text x="190" y="147">Lviv</text></g>
+          <g class="city-dot"><circle cx="328" cy="145" r="7"/><text x="338" y="141">Kyiv</text></g>
+          <g class="city-dot"><circle cx="470" cy="143" r="7"/><text x="480" y="139">Kharkiv</text></g>
+          <g class="city-dot"><circle cx="421" cy="190" r="7"/><text x="431" y="186">Dnipro</text></g>
+          <g class="city-dot"><circle cx="324" cy="238" r="7"/><text x="334" y="234">Odesa</text></g>
+        </svg>
+        <div class="status-key">
+          <span><i class="status-swatch stable"></i>Stable</span>
+          <span><i class="status-swatch partial"></i>Partial</span>
+          <span><i class="status-swatch critical"></i>Critical</span>
+        </div>
+      </div>
+
+      <div id="approvedUtilityList" class="utility-list">
+        <div class="loading-card">Loading infrastructure reports…</div>
+      </div>
+
+      <button class="secondary-action" onclick="page('map',document.getElementById('navMap'));setTimeout(()=>openSafetyFeature('utilities'),150)">View on map</button>
+    </div>
+  </section>
+
+  <!-- MORE / BE PREPARED -->
   <section id="p-survival" class="page">
-    <div class="scroll">
-      <div class="hero"><h2 data-i18n="safetyTitle">🎒 Безпека</h2><p data-i18n="safetyDesc">Критичні інструкції зберігаються локально.</p></div>
-      <button class="sos" onclick="dial('112')" data-i18n="call112">ВІДКРИТИ ВИКЛИК 112</button>
+    <div class="scroll approved-scroll">
+      <div class="screen-head">
+        <div><span class="eyebrow">BE PREPARED</span><h1>Preparedness</h1></div>
+        <button class="sos-mini large" onclick="dial('112')">SOS</button>
+      </div>
 
-      <div class="card">
-        <h3 data-i18n="emergencyNumbers">Екстрені номери</h3>
-        <div class="emergency">
-          <button onclick="dial('112')"><strong>112</strong><span data-i18n="service112">Єдина служба</span></button>
-          <button onclick="dial('101')"><strong>101</strong><span data-i18n="service101">ДСНС</span></button>
-          <button onclick="dial('102')"><strong>102</strong><span data-i18n="service102">Поліція</span></button>
-          <button onclick="dial('103')"><strong>103</strong><span data-i18n="service103">Швидка</span></button>
+      <div class="segmented prepared-tabs">
+        <button class="active" onclick="switchPreparedTab('checklist',this)">Checklist</button>
+        <button onclick="switchPreparedTab('sos',this)">SOS</button>
+        <button onclick="switchPreparedTab('contacts',this)">Contacts</button>
+      </div>
+
+      <div id="prepared-checklist" class="prepared-panel active">
+        <div class="prep-card glass-card">
+          <div class="prep-title"><div><b>72-Hour Emergency Checklist</b><small>Essential items for you and your family</small></div><span>72H</span></div>
+          <div id="kit"></div>
+          <div class="row kit-add">
+            <input id="newKitItem" class="input grow" maxlength="160" placeholder="Add an item">
+            <button class="send" onclick="addChecklistItem()">＋</button>
+          </div>
         </div>
+        <div class="together-card"><span>♥</span><div><b>Stronger together</b><small>Prepared communities save lives.</small></div></div>
       </div>
 
-      <div class="card">
-        <div class="row between"><h3 data-i18n="kit72">72-годинний набір</h3><span class="small" data-i18n="editable">Editable</span></div>
-        <div id="kit"></div>
-        <div class="row kit-add">
-          <input id="newKitItem" class="input grow" maxlength="160" data-i18n-placeholder="addKitItem" placeholder="Add item">
-          <button class="send" onclick="addChecklistItem()">＋</button>
+      <div id="prepared-sos" class="prepared-panel">
+        <button class="big-sos" onclick="dial('112')"><strong>112</strong><span>Open emergency call</span></button>
+        <div class="sos-grid">
+          <button onclick="dial('101')"><b>101</b><span>Emergency service</span></button>
+          <button onclick="dial('102')"><b>102</b><span>Police</span></button>
+          <button onclick="dial('103')"><b>103</b><span>Ambulance</span></button>
         </div>
+        <div class="prep-card glass-card"><b>My position</b><div id="myPos" class="small">Coordinates are never published automatically.</div><button class="secondary-action compact" onclick="showPosition()">Find my position</button></div>
       </div>
 
-      <div class="card"><h3 data-i18n="duringAlert">Під час тривоги</h3><div class="small" data-i18n="duringAlertText">Орієнтуйтесь на офіційні повідомлення і прямуйте до офіційного укриття.</div></div>
-      <div class="card"><h3 data-i18n="myPosition">Моя позиція</h3><div id="myPos" class="small" data-i18n="positionPrivate">Координати не публікуються автоматично.</div><button class="send compact" style="margin-top:10px" onclick="showPosition()" data-i18n="locate">Визначити позицію</button></div>
-    </div>
-  </section>
+      <div id="prepared-contacts" class="prepared-panel">
+        <div class="contact-card"><span>112</span><div><b>Unified emergency number</b><small>Emergency assistance</small></div><button onclick="dial('112')">Call</button></div>
+        <div class="contact-card"><span>101</span><div><b>Emergency Service of Ukraine</b><small>Rescue & civil protection</small></div><button onclick="dial('101')">Call</button></div>
+        <div class="contact-card"><span>102</span><div><b>Police</b><small>Public safety</small></div><button onclick="dial('102')">Call</button></div>
+        <div class="contact-card"><span>103</span><div><b>Ambulance</b><small>Medical emergency</small></div><button onclick="dial('103')">Call</button></div>
+        <button class="official-source-btn" onclick="openResourcesSheet()">Verified help & resources</button>
+      </div>
 
-  <section id="p-profile" class="page">
-    <div class="scroll profile-page">
-      <div class="profile-card">
-        <div id="profileAvatar" class="profile-avatar">U</div>
-        <div class="grow">
-          <h2 id="profileUsername">User</h2>
-          <div id="profileEmail" class="small"></div>
-        </div>
-      </div>
-      <div class="profile-actions">
-        <button class="send" onclick="openPostSheet()" data-i18n="newPost">＋ Post</button>
-        <button class="send secondary" onclick="openStorySheet()" data-i18n="addStory">＋ Story</button>
-      </div>
-      <div class="card">
-        <label class="small" data-i18n="username">Username</label>
-        <div class="row"><input id="profileUsernameInput" class="input grow" maxlength="32"><button class="send" onclick="saveProfile()" data-i18n="save">Save</button></div>
-      </div>
-      <button class="danger-btn" onclick="logout()" data-i18n="logout">Log out</button>
-      <button class="visione-footer" onclick="openExternal('https://visione.one/UALIVESMATTER/')" aria-label="Open VISIONE website">
-        <span>an app by</span><b>VISIONE</b>
+      <button class="visione-footer" onclick="openExternal('https://visione.one/UALIVESMATTER/')">
+        <span>FREE · OPEN · INDEPENDENT</span><b>AN APP BY VISIONE</b>
       </button>
     </div>
   </section>
 
+  <!-- Compatibility pages retained for social/chat/profile engine -->
+  <section id="p-feed" class="page compat-page">
+    <div class="safety-dashboard">
+      <button id="dashboardToggle" onclick="toggleSafetyMenu()">−</button>
+      <div class="dashboard-grid"><button class="air-card"><small>Live map</small></button></div>
+    </div>
+    <div id="stories"></div><div id="feedDeck"></div>
+  </section>
+  <section id="p-chat" class="page compat-page"><div id="messages"></div><input id="chatInput"></section>
+  <section id="p-profile" class="page compat-page">
+    <div id="profileAvatar">U</div><div id="profileUsername">User</div><div id="profileEmail"></div>
+    <input id="profileUsernameInput"><button onclick="saveProfile()">Save</button>
+  </section>
+
   <nav class="nav nav5">
-    <button id="navFeed" class="active" onclick="page('feed',this)"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.2 12 4l9 7.2v8.3a.5.5 0 0 1-.5.5H15v-6H9v6H3.5a.5.5 0 0 1-.5-.5z"/></svg></span><b data-i18n="navFeed">Feed</b></button>
-    <button onclick="page('map',this)"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="m3 6 5-2 8 3 5-2v13l-5 2-8-3-5 2z"/><path d="M8 4v13M16 7v13"/></svg></span><b data-i18n="navMap">Мапа</b></button>
-    <button onclick="page('chat',this)"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-5 4v-4.5A2.5 2.5 0 0 1 4 13.5z"/></svg></span><b data-i18n="navChat">Чат</b></button>
-    <button onclick="page('survival',this)"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M8 4h8l2 4v12H6V8z"/><path d="M9 4V2h6v2M9 11h6M12 8v6"/></svg></span><b data-i18n="navSafety">Безпека</b></button>
-    <button onclick="page('profile',this)"><span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c.8-4.4 3.2-6.5 7.5-6.5s6.7 2.1 7.5 6.5"/></svg></span><b data-i18n="navProfile">Profile</b></button>
+    <button id="navMap" class="active" onclick="page('map',this)"><span class="nav-ico">⌖</span><b>Map</b></button>
+    <button id="navAlerts" onclick="page('alerts',this);refreshApprovedAlerts()"><span class="nav-ico">♟</span><b>Alerts</b></button>
+    <button id="navShelters" onclick="page('shelters',this);refreshShelterPanel()"><span class="nav-ico">⌂</span><b>Shelters</b></button>
+    <button id="navUtilities" onclick="page('utilities',this);refreshUtilityPanel()"><span class="nav-ico">⌁</span><b>Utilities</b></button>
+    <button id="navMore" onclick="page('survival',this)"><span class="nav-ico">☰</span><b>More</b></button>
   </nav>
 </div>
 
+<!-- Reports -->
 <div id="alertSheet" class="sheet" onclick="if(event.target===this)closeAlert()"><div class="sheetbox">
-  <h2 data-i18n="newAlert">⚠️ Нове повідомлення</h2>
-  <div class="small" data-i18n="civilOnly">Лише цивільна безпека. Не публікуйте військові позиції або пересування.</div>
+  <div class="sheet-head"><div><span class="eyebrow">COMMUNITY REPORT</span><h2>New safety report</h2></div><button onclick="closeAlert()">×</button></div>
+  <div class="small">Civilian safety only. Do not publish military positions, equipment or movements.</div>
   <div class="types">
-    <button class="type sel" onclick="pickType(this,'danger')" data-i18n="typeDanger">⚠️ Небезпека</button>
-    <button class="type" onclick="pickType(this,'fire')" data-i18n="typeFire">🔥 Пожежа</button>
-    <button class="type" onclick="pickType(this,'road')" data-i18n="typeRoad">🚧 Дорога</button>
-    <button class="type" onclick="pickType(this,'power')" data-i18n="typePower">⚡ Немає світла</button>
-    <button class="type" onclick="pickType(this,'heating')" data-i18n="typeHeating">♨️ Немає тепла</button>
-    <button class="type" onclick="pickType(this,'water')" data-i18n="typeWater">💧 Немає води</button>
-    <button class="type" onclick="pickType(this,'shelter')" data-i18n="typeShelter">🛡️ Укриття</button>
-    <button class="type" onclick="pickType(this,'medical')" data-i18n="typeMedical">🩹 Медична</button>
+    <button class="type sel" onclick="pickType(this,'danger')">⚠ Danger</button>
+    <button class="type" onclick="pickType(this,'fire')">🔥 Fire</button>
+    <button class="type" onclick="pickType(this,'road')">🚧 Road</button>
+    <button class="type" onclick="pickType(this,'power')">⚡ Power</button>
+    <button class="type" onclick="pickType(this,'heating')">♨ Heating</button>
+    <button class="type" onclick="pickType(this,'water')">💧 Water</button>
+    <button class="type" onclick="pickType(this,'shelter')">⌂ Shelter</button>
+    <button class="type" onclick="pickType(this,'medical')">✚ Medical</button>
   </div>
-  <textarea id="alertText" class="input" rows="3" maxlength="220" data-i18n-placeholder="alertPlaceholder" placeholder="Коротко опишіть ситуацію…"></textarea>
-  <div class="notice" data-i18n="alertPrivacy">Місце публікації округлюється.</div>
-  <div class="row"><button class="chip grow" onclick="closeAlert()" data-i18n="cancel">Скасувати</button><button class="send grow" onclick="submitAlert()" data-i18n="publish">Опублікувати</button></div>
+  <textarea id="alertText" class="input" rows="3" maxlength="220" placeholder="Briefly describe the situation…"></textarea>
+  <div class="notice">Published location is rounded. Other users can confirm or reject the report.</div>
+  <div class="row"><button class="chip grow" onclick="closeAlert()">Cancel</button><button class="send grow" onclick="submitAlert()">Publish</button></div>
 </div></div>
 
+<!-- Existing social sheets kept operational -->
 <div id="postSheet" class="sheet" onclick="if(event.target===this)closePostSheet()"><div class="sheetbox">
-  <h2 data-i18n="newPost">New post</h2>
-  <textarea id="postCaption" class="input" rows="3" maxlength="2000" data-i18n-placeholder="caption" placeholder="Caption"></textarea>
-  <label class="file-picker"><input id="postMedia" type="file" accept="image/*,video/*"><span data-i18n="choosePhotoVideo">Choose photo or video</span></label>
-  <div id="postUploadStatus" class="small"></div>
-  <div class="row"><button class="chip grow" onclick="closePostSheet()" data-i18n="cancel">Cancel</button><button class="send grow" onclick="createPost()" data-i18n="publish">Publish</button></div>
+  <h2>New post</h2><textarea id="postCaption" class="input" rows="3" maxlength="2000" placeholder="Caption"></textarea>
+  <label class="file-picker"><input id="postMedia" type="file" accept="image/*,video/*"><span>Choose photo or video</span></label>
+  <div id="postUploadStatus" class="small"></div><div class="row"><button class="chip grow" onclick="closePostSheet()">Cancel</button><button class="send grow" onclick="createPost()">Publish</button></div>
 </div></div>
 
 <div id="storySheet" class="sheet" onclick="if(event.target===this)closeStorySheet()"><div class="sheetbox">
-  <h2 data-i18n="addStory">Add story</h2>
-  <label class="file-picker"><input id="storyMedia" type="file" accept="image/*,video/*"><span data-i18n="choosePhotoVideo">Choose photo or video</span></label>
-  <div id="storyUploadStatus" class="small"></div>
-  <div class="row"><button class="chip grow" onclick="closeStorySheet()" data-i18n="cancel">Cancel</button><button class="send grow" onclick="createStory()" data-i18n="publish">Publish</button></div>
+  <h2>Add story</h2><label class="file-picker"><input id="storyMedia" type="file" accept="image/*,video/*"><span>Choose photo or video</span></label>
+  <div id="storyUploadStatus" class="small"></div><div class="row"><button class="chip grow" onclick="closeStorySheet()">Cancel</button><button class="send grow" onclick="createStory()">Publish</button></div>
 </div></div>
 
 <div id="resourcesSheet" class="sheet" onclick="if(event.target===this)closeResourcesSheet()"><div class="sheetbox">
-  <h2 data-i18n="verifiedHelpTitle">Verified help & charities</h2>
-  <div class="small" data-i18n="verifiedHelpText">Official and verified resources. Opening a resource leaves the app.</div>
+  <div class="sheet-head"><div><span class="eyebrow">VERIFIED SOURCES</span><h2>Help & resources</h2></div><button onclick="closeResourcesSheet()">×</button></div>
+  <div class="small">Official and verified resources. Opening a resource leaves the app.</div>
   <div id="verifiedResources" class="resource-list"></div>
-  <button class="chip full" onclick="closeResourcesSheet()" data-i18n="close">Close</button>
 </div></div>
 
 <div id="routeSheet" class="sheet" onclick="if(event.target===this)closeRouteSheet()"><div class="sheetbox">
-  <h2 data-i18n="routeOptionsTitle">Safer route</h2>
-  <div class="small" data-i18n="routeDisclaimer">Informational route only. Follow official evacuation instructions and local authorities.</div>
-  <div id="routeSummary" class="route-summary"></div>
-  <div class="row">
-    <button class="chip grow" onclick="clearRoute()" data-i18n="clearRoute">Clear route</button>
-    <button class="send grow" onclick="closeRouteSheet()" data-i18n="done">Done</button>
+  <div class="sheet-head"><div><span class="eyebrow">ROUTE TO SAFE PLACE</span><h2>Recommended route</h2></div><button onclick="closeRouteSheet()">×</button></div>
+  <div class="travel-modes sheet-modes">
+    <button class="active" onclick="setTravelMode('driving',this)">🚗</button>
+    <button onclick="setTravelMode('walking',this)">🚶</button>
+    <button onclick="setTravelMode('cycling',this)">🚲</button>
   </div>
+  <div id="routeSummary" class="route-summary"></div>
+  <div class="safety-disclaimer">Informational route only. Follow official evacuation instructions and local authorities.</div>
+  <div class="row"><button class="chip grow" onclick="clearRoute()">Clear route</button><button class="send grow" onclick="closeRouteSheet()">Done</button></div>
+</div></div>
+
+<div id="settingsSheet" class="sheet" onclick="if(event.target===this)closeSettings()"><div class="sheetbox">
+  <div class="sheet-head"><div><span class="eyebrow">UA LIVES MATTER</span><h2>Settings</h2></div><button onclick="closeSettings()">×</button></div>
+  <div class="settings-row"><div><b>Language</b><small>Українська · English · Русский</small></div><select onchange="setLanguage(this.value);document.getElementById('langSelect').value=this.value"><option value="uk">Українська</option><option value="en">English</option><option value="ru">Русский</option></select></div>
+  <button class="settings-link" onclick="openResourcesSheet();closeSettings()">Official & verified sources <span>›</span></button>
+  <button class="settings-link" onclick="openExternal('https://visione.one/UALIVESMATTER/')">About UA LIVES MATTER <span>↗</span></button>
+  <div class="safety-disclaimer">Free, open and independent. Built for civilians. This app does not replace official emergency systems.</div>
 </div></div>
 
 <div id="storyViewer" class="story-viewer hidden" onclick="closeStoryViewer()">
-  <button class="story-close">×</button>
-  <div id="storyContent" class="story-content" onclick="event.stopPropagation()"></div>
+  <button class="story-close">×</button><div id="storyContent" class="story-content" onclick="event.stopPropagation()"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -267,5 +353,6 @@
 <script src="social.js"></script>
 <script src="safety-map.js"></script>
 <script src="polish.js"></script>
+<script src="redesign.js"></script>
 </body>
 </html>

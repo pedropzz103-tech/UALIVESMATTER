@@ -106,7 +106,7 @@ async function afterAuthenticated(session){
   subscribeNearbyNotifications();
   updateProfileUI();
   if(window.initSafetyMap)window.initSafetyMap();
-  page('feed',document.getElementById('navFeed'));
+  page('map',document.getElementById('navMap'));
 }
 
 async function ensureProfile(){
