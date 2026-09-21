@@ -4,15 +4,15 @@ plugins {
 }
 
 android {
-    namespace = "org.ualivesmatter.app"
+    namespace = "org.safekray.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "org.ualivesmatter.app"
+        applicationId = "org.safekray.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 10
-        versionName = "0.7.2"
+        versionCode = 11
+        versionName = "0.8.0"
     }
 
     buildTypes {
