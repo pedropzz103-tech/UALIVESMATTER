@@ -203,3 +203,8 @@ button{color:inherit}
   .route-quick{display:none}
   .map-legend{width:174px}
 }
+
+/* final mockup parity corrections */
+.route-quick,.map-report{display:none!important}
+#p-shelters{bottom:0}
+.nav.route-hidden{display:none}
