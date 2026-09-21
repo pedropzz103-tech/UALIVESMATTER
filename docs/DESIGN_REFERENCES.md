@@ -1,6 +1,6 @@
 # UI design references for v0.5
 
-The v0.5 redesign was informed by public GitHub projects, but the UA LIVES MATTER UI is implemented independently.
+The v0.5 redesign was informed by public GitHub projects, but the SAFEKRAY UI is implemented independently.
 
 ## References reviewed
 
