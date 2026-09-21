@@ -1,8 +1,8 @@
-# UA LIVES MATTER
+# SAFEKRAY
 
-Android civilian-safety and community app for Ukraine.
+Free, independent Android civilian-safety and community app for Ukraine. A VISIONE project.
 
-## v0.6
+## v0.8
 - UA-State-inspired safety dashboard
 - Live air-alert polygons using NEPTUN region GeoJSON + alert snapshot API
 - Civilian risk zones rendered as red / orange / yellow overlays
@@ -45,7 +45,7 @@ These entries link to the organizations' official websites. The app does not pro
 ## Email confirmation redirect
 The Android app accepts:
 
-`ualivesmatter://auth/callback`
+`safekray://auth/callback`
 
 Signup requests send this as their `emailRedirectTo`.
 
@@ -67,3 +67,9 @@ SQL migrations live under `backend/`.
 
 ## Build
 GitHub Actions validates all embedded JavaScript and produces a debug APK artifact on every push to `main`.
+
+
+## Project page
+https://visione.one/SAFEKRAY/
+
+SAFEKRAY is independent and is not affiliated with similarly named organizations.

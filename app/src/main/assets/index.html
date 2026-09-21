@@ -1,294 +1,234 @@
 <!doctype html>
-<html lang="uk">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#07111d">
-<title>UA LIVES MATTER</title>
+<title>SAFEKRAY</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <div id="accessGate" class="access-gate">
   <div class="gate-card">
     <div class="gate-logo"><b>UA</b> LIVES MATTER</div>
-    <h2 id="gateTitle">Перевірка доступу</h2>
-    <p id="gateText">Для використання застосунку потрібна геолокація.</p>
-    <button id="gateRetry" class="send" onclick="checkRegionalAccess()">Повторити</button>
+    <h2 id="gateTitle">Access check</h2>
+    <p id="gateText">Location is required to use the app.</p>
+    <button id="gateRetry" class="primary-btn" onclick="checkRegionalAccess()">Retry</button>
   </div>
 </div>
 
 <div id="authGate" class="access-gate hidden">
   <div class="gate-card auth-card">
     <div class="gate-logo"><b>UA</b> LIVES MATTER</div>
-    <div class="gate-kicker">SAFER PEOPLE · STRONGER TOMORROW</div>
-    <h2 id="authTitle">Вхід</h2>
+    <div class="gate-tag">SAFER PEOPLE · STRONGER TOMORROW</div>
+    <h2 id="authTitle">Sign in</h2>
     <input id="authEmail" class="input" type="email" autocomplete="email" placeholder="Email">
     <input id="authPassword" class="input" type="password" autocomplete="current-password" placeholder="Password">
     <input id="authUsername" class="input hidden" maxlength="32" placeholder="Username">
-    <button id="authSubmit" class="send full" onclick="submitAuth()">Увійти</button>
-    <button id="authSwitch" class="link-btn" onclick="toggleAuthMode()">Створити акаунт</button>
+    <button id="authSubmit" class="primary-btn full" onclick="submitAuth()">Sign in</button>
+    <button id="authSwitch" class="text-btn" onclick="toggleAuthMode()">Create account</button>
     <div id="authMessage" class="small"></div>
   </div>
 </div>
 
 <div id="app">
-  <header class="top">
-    <div class="brand"><b>UA</b> LIVES MATTER</div>
-    <div class="top-actions">
-      <span class="top-tag">CIVILIAN SAFETY</span>
-      <div id="backendStatus" class="status">OFFLINE</div>
-      <button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙</button>
-      <button class="sos-mini" onclick="dial('112')">SOS</button>
-      <select id="langSelect" class="lang" onchange="setLanguage(this.value)">
-        <option value="uk">UA</option><option value="en">EN</option><option value="ru">RU</option>
-      </select>
-    </div>
-  </header>
+  <div id="backendStatus" class="backend-dot">OFFLINE</div>
 
   <!-- MAP -->
-  <section id="p-map" class="page map-page active">
+  <section id="p-map" class="page active map-page">
     <div id="map"></div>
-
-    <div class="map-search-wrap">
-      <div class="map-search">
-        <span>⌕</span>
-        <input id="mapSearchInput" placeholder="Search location (city, address…)" onkeydown="if(event.key==='Enter')searchMapLocation()">
-        <button onclick="searchMapLocation()">Go</button>
-      </div>
+    <div class="screen-bar map-screen-bar">
+      <div class="app-wordmark"><b>UA</b> LIVES MATTER</div>
+      <button class="gear-btn" onclick="openSettings()" aria-label="Settings">⚙</button>
     </div>
-
-    <div class="mapbar">
-      <button id="btnRisk" class="chip on risk-chip" onclick="toggleSafetyLayer('risk',this)">Risk</button>
-      <button id="btnAir" class="chip on alert-chip" onclick="toggleSafetyLayer('air',this)">Alerts</button>
-      <button id="btnShelter" class="chip on" onclick="toggleLayer('shelter',this)">Shelters</button>
+    <div class="map-search">
+      <span class="search-glyph">⌕</span>
+      <input id="mapSearchInput" placeholder="Search location (city, address…)" onkeydown="if(event.key==='Enter')searchMapLocation()">
+      <button onclick="searchMapLocation()">⌁</button>
+    </div>
+    <div class="map-legend">
+      <button onclick="openSafetyFeature('air')"><i class="legend red">✈</i><span>Air raid alert</span></button>
+      <button onclick="openSafetyFeature('risk')"><i class="legend red">✦</i><span>Explosions / strikes</span></button>
+      <button onclick="openSafetyFeature('risk')"><i class="legend risk"></i><span>High-risk area</span></button>
+      <button onclick="openSafetyFeature('shelter')"><i class="legend green">⌂</i><span>Shelter</span></button>
+      <button onclick="openResourcesSheet()"><i class="legend blue">✚</i><span>Humanitarian aid</span></button>
+      <button onclick="page('utilities',document.getElementById('navThird'))"><i class="legend purple">⌁</i><span>Critical infrastructure</span></button>
+      <button onclick="page('utilities',document.getElementById('navThird'))"><i class="legend yellow">⚡</i><span>Power / water outage</span></button>
+    </div>
+    <div class="mapbar hidden-controls" aria-hidden="true">
+      <button id="btnRisk" class="chip on" onclick="toggleSafetyLayer('risk',this)">Risk</button>
+      <button id="btnAir" class="chip on" onclick="toggleSafetyLayer('air',this)">Air</button>
+      <button id="btnShelter" class="chip on" onclick="toggleLayer('shelter',this)">Shelter</button>
       <button id="btnUtilities" class="chip on" onclick="toggleLayer('utilities',this)">Utilities</button>
       <button id="btnTransport" class="chip" onclick="toggleLayer('transport',this)">Transport</button>
       <button id="btnCommunity" class="chip on" onclick="toggleLayer('community',this)">Community</button>
     </div>
-
-    <div class="map-legend glass-card">
-      <div class="legend-title">MAP LAYERS</div>
-      <span><i class="legend-icon red">✈</i>Air raid alert</span>
-      <span><i class="legend-icon red">✦</i>Explosions / strikes</span>
-      <span><i class="legend-icon danger"></i>High-risk area</span>
-      <span><i class="legend-icon green">⌂</i>Shelter</span>
-      <span><i class="legend-icon blue">✚</i>Humanitarian aid</span>
-      <span><i class="legend-icon purple">⌁</i>Critical infrastructure</span>
-      <span><i class="legend-icon yellow">⚡</i>Power / water outage</span>
-    </div>
-
     <button id="mapAttribution" class="map-data-credit" onclick="openExternal('https://neptun.in.ua/')">NEPTUN · OCHA · OSM ↗</button>
-
-    <div id="riskLegend" class="risk-legend">
-      <span><i class="risk-dot risk-red"></i>High</span>
-      <span><i class="risk-dot risk-orange"></i>Medium</span>
-      <span><i class="risk-dot risk-yellow"></i>Attention</span>
+    <div id="riskLegend" class="risk-legend hidden"></div>
+    <button class="map-locate" onclick="locateMe()">⌾</button>
+    <button class="map-report" onclick="openAlert()">＋</button>
+    <div class="route-quick" onclick="routeToNearestShelter()">
+      <span class="route-quick-icon">✣</span>
+      <div><b>Route to Safe Place</b><small>Find the nearest mapped shelter</small></div>
+      <span>›</span>
     </div>
-
-    <div class="route-dock glass-card">
-      <button onclick="routeToNearestShelter()" class="route-action primary-route">
-        <span>⌂</span><b>Route to Safe Place</b><small>Nearest shelter</small>
-      </button>
-      <button onclick="startDestinationMode()" class="route-action">
-        <span>⌖</span><b>Choose destination</b><small>Tap the map</small>
-      </button>
-    </div>
-
     <div id="routeStatus" class="route-status hidden"></div>
-    <button class="loc" onclick="locateMe()" aria-label="My location">⌾</button>
-    <button class="fab" onclick="openAlert()" aria-label="New report">＋</button>
+  </section>
+
+  <!-- ROUTE / SHELTERS -->
+  <section id="p-shelters" class="page">
+    <div class="screen-bar title-bar">
+      <button class="back-btn" onclick="page('map',document.getElementById('navMap'))">‹</button>
+      <h1>Route to Safe Place</h1>
+    </div>
+    <div class="route-screen-scroll">
+      <div class="route-selector-card">
+        <div class="route-selector-row"><i class="route-dot blue"></i><div><small>Your location</small><b id="routeOriginLabel">Current position</b></div><span>×</span></div>
+        <div class="route-selector-row"><i class="route-dot green"></i><div><small>Shelter</small><b id="routeDestinationLabel">Nearest available shelter</b></div><span>⌄</span></div>
+      </div>
+      <div class="travel-modes route-mode-strip">
+        <button data-route-mode="driving" onclick="setTravelMode('driving',this)">🚗</button>
+        <button class="active" data-route-mode="walking" onclick="setTravelMode('walking',this)">🚶</button>
+        <button data-route-mode="cycling" onclick="setTravelMode('cycling',this)">🚲</button>
+      </div>
+      <div id="routePreviewMap" class="route-preview-map"></div>
+      <div id="inlineRouteRecommendation" class="inline-route-card">
+        <span class="route-flower">✣</span>
+        <div class="grow"><b>Recommended route</b><small>Low risk · Well lit · Popular</small></div>
+        <button onclick="clearApprovedRoute()">×</button>
+        <div id="inlineRouteMetrics" class="inline-route-metrics"><span><b>—</b><small>km</small></span><span><b>—</b><small>min</small></span></div>
+        <button class="primary-btn full start-nav" onclick="routeToNearestShelter()">Start navigation</button>
+      </div>
+      <div class="nearby-title"><b>Nearby shelters</b><span id="shelterCount">—</span></div>
+      <div id="approvedShelterList" class="shelter-stack"><div class="loading-card">Use location to find nearby shelters.</div></div>
+    </div>
   </section>
 
   <!-- ALERTS -->
   <section id="p-alerts" class="page">
-    <div class="scroll approved-scroll">
-      <div class="screen-head">
-        <div><span class="eyebrow">REAL-TIME INFORMATION</span><h1>Alerts</h1></div>
-        <button class="icon-btn" onclick="refreshApprovedAlerts(true)">↻</button>
+    <div class="screen-bar title-bar plain-title"><h1>Alerts</h1></div>
+    <div class="content-scroll alert-screen">
+      <div id="approvedEmergencyBanner" class="air-alert-card">
+        <div class="air-alert-icon">♟</div>
+        <div class="grow"><b>Air raid alert</b><small>Kyiv region</small><p>Go to a shelter immediately.<br>Follow official instructions.</p></div>
+        <span class="alert-time">Today, 09:12</span>
       </div>
-
-      <div id="approvedEmergencyBanner" class="emergency-banner">
-        <div class="emergency-symbol">!</div>
-        <div class="grow"><b>Safety feed</b><p>Follow official instructions during an active emergency.</p></div>
-        <span class="pulse-dot"></span>
-      </div>
-
       <div class="segmented" id="alertFilters">
         <button class="active" onclick="setAlertFilter('all',this)">All</button>
         <button onclick="setAlertFilter('nearby',this)">Nearby</button>
         <button onclick="setAlertFilter('official',this)">Official</button>
       </div>
-
       <div id="approvedAlertList" class="alert-stack">
         <div class="loading-card">Loading safety information…</div>
       </div>
-
-      <button class="official-source-btn" onclick="openResourcesSheet()">View official & verified sources</button>
-      <div class="safety-disclaimer">UA LIVES MATTER is an informational civilian-safety tool. Always follow official alerts and local authorities.</div>
-    </div>
-  </section>
-
-  <!-- SHELTERS / ROUTE -->
-  <section id="p-shelters" class="page">
-    <div class="scroll approved-scroll">
-      <div class="screen-head">
-        <div><span class="eyebrow">ROUTE TO SAFE PLACE</span><h1>Shelters</h1></div>
-        <button class="icon-btn" onclick="refreshShelterPanel(true)">↻</button>
-      </div>
-
-      <div class="route-planner glass-card">
-        <div class="route-point"><i class="point blue"></i><div><small>Your location</small><b id="routeOriginLabel">Current position</b></div></div>
-        <div class="route-line"></div>
-        <div class="route-point"><i class="point green"></i><div><small>Destination</small><b>Nearest available shelter</b></div></div>
-
-        <div class="travel-modes">
-          <button class="active" data-route-mode="driving" onclick="setTravelMode('driving',this)">🚗</button>
-          <button data-route-mode="walking" onclick="setTravelMode('walking',this)">🚶</button>
-          <button data-route-mode="cycling" onclick="setTravelMode('cycling',this)">🚲</button>
-        </div>
-
-        <div class="route-recommendation">
-          <span class="route-star">✣</span>
-          <div class="grow"><b>Recommended route</b><small>Safety-scored against available risk layers</small></div>
-        </div>
-        <button class="send full route-start" onclick="routeToNearestShelter()">Start navigation</button>
-      </div>
-
-      <div class="section-title"><b>Nearby shelters</b><span id="shelterCount">—</span></div>
-      <div id="approvedShelterList" class="shelter-stack">
-        <div class="loading-card">Use location to find nearby shelters.</div>
-      </div>
-      <button class="secondary-action" onclick="page('map',document.getElementById('navMap'));setTimeout(locateMe,200)">Open shelter map</button>
+      <button class="official-source-btn" onclick="openResourcesSheet()">View official sources</button>
     </div>
   </section>
 
   <!-- UTILITIES -->
   <section id="p-utilities" class="page">
-    <div class="scroll approved-scroll">
-      <div class="screen-head">
-        <div><span class="eyebrow">UTILITIES & INFRASTRUCTURE</span><h1>Service status</h1></div>
-        <button class="icon-btn" onclick="refreshUtilityPanel(true)">↻</button>
-      </div>
-
+    <div class="screen-bar title-bar">
+      <button class="back-btn" onclick="page('map',document.getElementById('navMap'))">‹</button>
+      <h1>Utilities & Infrastructure</h1>
+    </div>
+    <div class="content-scroll utility-screen">
       <div class="segmented utility-tabs">
         <button class="active" onclick="switchUtilityTab('overview',this)">Overview</button>
         <button onclick="switchUtilityTab('power',this)">Power</button>
         <button onclick="switchUtilityTab('water',this)">Water</button>
         <button onclick="switchUtilityTab('heating',this)">Heating</button>
       </div>
-
-      <div class="ukraine-status-card glass-card">
-        <div class="status-map-title"><b>Ukraine overview</b><small id="utilityLastUpdate">Updating…</small></div>
-        <svg class="ukraine-svg" viewBox="0 0 620 340" role="img" aria-label="Ukraine service status overview">
+      <div class="ukraine-map-card">
+        <svg class="ukraine-svg" viewBox="0 0 620 340" role="img" aria-label="Ukraine infrastructure status">
           <defs>
             <linearGradient id="ukrStatus" x1="0" x2="1">
-              <stop offset="0%" stop-color="#239a63"/>
-              <stop offset="47%" stop-color="#e1a62e"/>
-              <stop offset="76%" stop-color="#d95b36"/>
-              <stop offset="100%" stop-color="#c7373f"/>
+              <stop offset="0%" stop-color="#2e9362"/>
+              <stop offset="42%" stop-color="#d8aa38"/>
+              <stop offset="70%" stop-color="#e07d35"/>
+              <stop offset="100%" stop-color="#c6383f"/>
             </linearGradient>
           </defs>
-          <path d="M70 155 98 118 145 112 177 82 232 94 268 70 310 86 343 72 390 90 428 82 450 108 496 106 526 132 558 138 548 168 578 190 538 212 514 246 466 238 436 260 385 252 352 272 313 252 278 266 244 242 205 250 176 229 132 234 112 210 78 205 55 181Z" fill="url(#ukrStatus)" stroke="#2f4359" stroke-width="5"/>
-          <g class="city-dot"><circle cx="180" cy="151" r="7"/><text x="190" y="147">Lviv</text></g>
-          <g class="city-dot"><circle cx="328" cy="145" r="7"/><text x="338" y="141">Kyiv</text></g>
-          <g class="city-dot"><circle cx="470" cy="143" r="7"/><text x="480" y="139">Kharkiv</text></g>
-          <g class="city-dot"><circle cx="421" cy="190" r="7"/><text x="431" y="186">Dnipro</text></g>
-          <g class="city-dot"><circle cx="324" cy="238" r="7"/><text x="334" y="234">Odesa</text></g>
+          <path d="M70 155 98 118 145 112 177 82 232 94 268 70 310 86 343 72 390 90 428 82 450 108 496 106 526 132 558 138 548 168 578 190 538 212 514 246 466 238 436 260 385 252 352 272 313 252 278 266 244 242 205 250 176 229 132 234 112 210 78 205 55 181Z" fill="url(#ukrStatus)" stroke="#1c3549" stroke-width="5"/>
+          <g class="city-label"><text x="170" y="154">Lviv</text></g>
+          <g class="city-label"><text x="323" y="147">Kyiv</text></g>
+          <g class="city-label"><text x="465" y="146">Kharkiv</text></g>
+          <g class="city-label"><text x="417" y="194">Dnipro</text></g>
+          <g class="city-label"><text x="314" y="243">Odesa</text></g>
         </svg>
-        <div class="status-key">
-          <span><i class="status-swatch stable"></i>Stable</span>
-          <span><i class="status-swatch partial"></i>Partial</span>
-          <span><i class="status-swatch critical"></i>Critical</span>
-        </div>
+        <div class="map-update">Last update: <span id="utilityLastUpdate">Today, 08:50</span></div>
       </div>
-
       <div id="approvedUtilityList" class="utility-list">
-        <div class="loading-card">Loading infrastructure reports…</div>
+        <div class="utility-row"><div class="utility-icon yellow">⚠</div><div><b>Kyiv</b><small>Partial outages</small></div><span>›</span></div>
+        <div class="utility-row"><div class="utility-icon red">✕</div><div><b>Kharkiv</b><small>Significant outages</small></div><span>›</span></div>
+        <div class="utility-row"><div class="utility-icon green">⌂</div><div><b>Odesa</b><small>Stable</small></div><span>›</span></div>
+        <div class="utility-row"><div class="utility-icon blue">✕</div><div><b>Dnipro</b><small>Planned maintenance</small></div><span>›</span></div>
+        <div class="utility-row"><div class="utility-icon green">⌂</div><div><b>Lviv</b><small>Stable</small></div><span>›</span></div>
       </div>
-
-      <button class="secondary-action" onclick="page('map',document.getElementById('navMap'));setTimeout(()=>openSafetyFeature('utilities'),150)">View on map</button>
+      <div class="utility-hint">ⓘ &nbsp; Tap on a region for more details</div>
     </div>
   </section>
 
-  <!-- MORE / BE PREPARED -->
+  <!-- BE PREPARED -->
   <section id="p-survival" class="page">
-    <div class="scroll approved-scroll">
-      <div class="screen-head">
-        <div><span class="eyebrow">BE PREPARED</span><h1>Preparedness</h1></div>
-        <button class="sos-mini large" onclick="dial('112')">SOS</button>
-      </div>
-
+    <div class="screen-bar title-bar plain-title"><h1>Be Prepared</h1></div>
+    <div class="content-scroll prepared-screen">
       <div class="segmented prepared-tabs">
         <button class="active" onclick="switchPreparedTab('checklist',this)">Checklist</button>
         <button onclick="switchPreparedTab('sos',this)">SOS</button>
         <button onclick="switchPreparedTab('contacts',this)">Contacts</button>
       </div>
-
       <div id="prepared-checklist" class="prepared-panel active">
-        <div class="prep-card glass-card">
-          <div class="prep-title"><div><b>72-Hour Emergency Checklist</b><small>Essential items for you and your family</small></div><span>72H</span></div>
+        <div class="checklist-card">
+          <div class="checklist-heading"><b>72-Hour Emergency Checklist</b><small>Essential items for you and your family</small></div>
           <div id="kit"></div>
           <div class="row kit-add">
             <input id="newKitItem" class="input grow" maxlength="160" placeholder="Add an item">
-            <button class="send" onclick="addChecklistItem()">＋</button>
+            <button class="primary-btn" onclick="addChecklistItem()">＋</button>
           </div>
         </div>
         <div class="together-card"><span>♥</span><div><b>Stronger together</b><small>Prepared communities save lives.</small></div></div>
       </div>
-
       <div id="prepared-sos" class="prepared-panel">
-        <button class="big-sos" onclick="dial('112')"><strong>112</strong><span>Open emergency call</span></button>
+        <button class="big-sos" onclick="dial('112')"><strong>112</strong><span>Emergency call</span></button>
         <div class="sos-grid">
           <button onclick="dial('101')"><b>101</b><span>Emergency service</span></button>
           <button onclick="dial('102')"><b>102</b><span>Police</span></button>
           <button onclick="dial('103')"><b>103</b><span>Ambulance</span></button>
         </div>
-        <div class="prep-card glass-card"><b>My position</b><div id="myPos" class="small">Coordinates are never published automatically.</div><button class="secondary-action compact" onclick="showPosition()">Find my position</button></div>
+        <div class="position-card"><b>My position</b><div id="myPos" class="small">Coordinates are never published automatically.</div><button onclick="showPosition()">Find my position</button></div>
       </div>
-
       <div id="prepared-contacts" class="prepared-panel">
-        <div class="contact-card"><span>112</span><div><b>Unified emergency number</b><small>Emergency assistance</small></div><button onclick="dial('112')">Call</button></div>
-        <div class="contact-card"><span>101</span><div><b>Emergency Service of Ukraine</b><small>Rescue & civil protection</small></div><button onclick="dial('101')">Call</button></div>
-        <div class="contact-card"><span>102</span><div><b>Police</b><small>Public safety</small></div><button onclick="dial('102')">Call</button></div>
-        <div class="contact-card"><span>103</span><div><b>Ambulance</b><small>Medical emergency</small></div><button onclick="dial('103')">Call</button></div>
+        <div class="contact-card"><b>112</b><span>Unified emergency</span><button onclick="dial('112')">Call</button></div>
+        <div class="contact-card"><b>101</b><span>Emergency service</span><button onclick="dial('101')">Call</button></div>
+        <div class="contact-card"><b>102</b><span>Police</span><button onclick="dial('102')">Call</button></div>
+        <div class="contact-card"><b>103</b><span>Ambulance</span><button onclick="dial('103')">Call</button></div>
         <button class="official-source-btn" onclick="openResourcesSheet()">Verified help & resources</button>
       </div>
-
-      <button class="visione-footer" onclick="openExternal('https://visione.one/UALIVESMATTER/')">
-        <span>FREE · OPEN · INDEPENDENT</span><b>AN APP BY VISIONE</b>
-      </button>
     </div>
   </section>
 
-  <!-- Compatibility pages retained for social/chat/profile engine -->
-  <section id="p-feed" class="page compat-page">
-    <div class="safety-dashboard">
-      <button id="dashboardToggle" onclick="toggleSafetyMenu()">−</button>
-      <div class="dashboard-grid"><button class="air-card"><small>Live map</small></button></div>
-    </div>
+  <!-- hidden compatibility surfaces used by the existing engine -->
+  <section id="p-feed" class="page compatibility">
+    <div class="safety-dashboard"><button id="dashboardToggle" onclick="toggleSafetyMenu()">−</button><button class="air-card"><small>Live map</small></button></div>
     <div id="stories"></div><div id="feedDeck"></div>
   </section>
-  <section id="p-chat" class="page compat-page"><div id="messages"></div><input id="chatInput"></section>
-  <section id="p-profile" class="page compat-page">
-    <div id="profileAvatar">U</div><div id="profileUsername">User</div><div id="profileEmail"></div>
-    <input id="profileUsernameInput"><button onclick="saveProfile()">Save</button>
+  <section id="p-chat" class="page compatibility"><div id="messages"></div><input id="chatInput"></section>
+  <section id="p-profile" class="page compatibility">
+    <div id="profileAvatar">U</div><div id="profileUsername">User</div><div id="profileEmail"></div><input id="profileUsernameInput">
   </section>
 
-  <nav class="nav nav5">
-    <button id="navMap" class="active" onclick="page('map',this)"><span class="nav-ico">⌖</span><b>Map</b></button>
-    <button id="navAlerts" onclick="page('alerts',this);refreshApprovedAlerts()"><span class="nav-ico">♟</span><b>Alerts</b></button>
-    <button id="navShelters" onclick="page('shelters',this);refreshShelterPanel()"><span class="nav-ico">⌂</span><b>Shelters</b></button>
-    <button id="navUtilities" onclick="page('utilities',this);refreshUtilityPanel()"><span class="nav-ico">⌁</span><b>Utilities</b></button>
-    <button id="navMore" onclick="page('survival',this)"><span class="nav-ico">☰</span><b>More</b></button>
+  <nav class="nav">
+    <button id="navMap" class="active" onclick="page('map',this)"><span class="nav-icon">⌖</span><b>Map</b></button>
+    <button id="navAlerts" onclick="page('alerts',this);refreshApprovedAlerts()"><span class="nav-icon">♧</span><b>Alerts</b></button>
+    <button id="navThird" onclick="page('shelters',this);refreshShelterPanel()"><span id="navThirdIcon" class="nav-icon">⌂</span><b id="navThirdLabel">Shelters</b></button>
+    <button id="navMore" onclick="page('survival',this)"><span class="nav-icon">☰</span><b>More</b></button>
   </nav>
 </div>
 
-<!-- Reports -->
 <div id="alertSheet" class="sheet" onclick="if(event.target===this)closeAlert()"><div class="sheetbox">
-  <div class="sheet-head"><div><span class="eyebrow">COMMUNITY REPORT</span><h2>New safety report</h2></div><button onclick="closeAlert()">×</button></div>
-  <div class="small">Civilian safety only. Do not publish military positions, equipment or movements.</div>
+  <div class="sheet-head"><h2>New safety report</h2><button onclick="closeAlert()">×</button></div>
+  <div class="small">Civilian safety only. Do not publish military positions or movements.</div>
   <div class="types">
     <button class="type sel" onclick="pickType(this,'danger')">⚠ Danger</button>
     <button class="type" onclick="pickType(this,'fire')">🔥 Fire</button>
@@ -300,51 +240,32 @@
     <button class="type" onclick="pickType(this,'medical')">✚ Medical</button>
   </div>
   <textarea id="alertText" class="input" rows="3" maxlength="220" placeholder="Briefly describe the situation…"></textarea>
-  <div class="notice">Published location is rounded. Other users can confirm or reject the report.</div>
-  <div class="row"><button class="chip grow" onclick="closeAlert()">Cancel</button><button class="send grow" onclick="submitAlert()">Publish</button></div>
-</div></div>
-
-<!-- Existing social sheets kept operational -->
-<div id="postSheet" class="sheet" onclick="if(event.target===this)closePostSheet()"><div class="sheetbox">
-  <h2>New post</h2><textarea id="postCaption" class="input" rows="3" maxlength="2000" placeholder="Caption"></textarea>
-  <label class="file-picker"><input id="postMedia" type="file" accept="image/*,video/*"><span>Choose photo or video</span></label>
-  <div id="postUploadStatus" class="small"></div><div class="row"><button class="chip grow" onclick="closePostSheet()">Cancel</button><button class="send grow" onclick="createPost()">Publish</button></div>
-</div></div>
-
-<div id="storySheet" class="sheet" onclick="if(event.target===this)closeStorySheet()"><div class="sheetbox">
-  <h2>Add story</h2><label class="file-picker"><input id="storyMedia" type="file" accept="image/*,video/*"><span>Choose photo or video</span></label>
-  <div id="storyUploadStatus" class="small"></div><div class="row"><button class="chip grow" onclick="closeStorySheet()">Cancel</button><button class="send grow" onclick="createStory()">Publish</button></div>
+  <div class="row"><button class="chip grow" onclick="closeAlert()">Cancel</button><button class="primary-btn grow" onclick="submitAlert()">Publish</button></div>
 </div></div>
 
 <div id="resourcesSheet" class="sheet" onclick="if(event.target===this)closeResourcesSheet()"><div class="sheetbox">
-  <div class="sheet-head"><div><span class="eyebrow">VERIFIED SOURCES</span><h2>Help & resources</h2></div><button onclick="closeResourcesSheet()">×</button></div>
-  <div class="small">Official and verified resources. Opening a resource leaves the app.</div>
+  <div class="sheet-head"><h2>Verified help & resources</h2><button onclick="closeResourcesSheet()">×</button></div>
   <div id="verifiedResources" class="resource-list"></div>
 </div></div>
 
-<div id="routeSheet" class="sheet" onclick="if(event.target===this)closeRouteSheet()"><div class="sheetbox">
-  <div class="sheet-head"><div><span class="eyebrow">ROUTE TO SAFE PLACE</span><h2>Recommended route</h2></div><button onclick="closeRouteSheet()">×</button></div>
-  <div class="travel-modes sheet-modes">
-    <button class="active" onclick="setTravelMode('driving',this)">🚗</button>
-    <button onclick="setTravelMode('walking',this)">🚶</button>
-    <button onclick="setTravelMode('cycling',this)">🚲</button>
-  </div>
+<div id="routeSheet" class="sheet" onclick="if(event.target===this)closeRouteSheet()"><div class="sheetbox compact-route-sheet">
+  <div class="sheet-head"><h2>Recommended route</h2><button onclick="closeRouteSheet()">×</button></div>
   <div id="routeSummary" class="route-summary"></div>
-  <div class="safety-disclaimer">Informational route only. Follow official evacuation instructions and local authorities.</div>
-  <div class="row"><button class="chip grow" onclick="clearRoute()">Clear route</button><button class="send grow" onclick="closeRouteSheet()">Done</button></div>
 </div></div>
 
 <div id="settingsSheet" class="sheet" onclick="if(event.target===this)closeSettings()"><div class="sheetbox">
-  <div class="sheet-head"><div><span class="eyebrow">UA LIVES MATTER</span><h2>Settings</h2></div><button onclick="closeSettings()">×</button></div>
-  <div class="settings-row"><div><b>Language</b><small>Українська · English · Русский</small></div><select onchange="setLanguage(this.value);document.getElementById('langSelect').value=this.value"><option value="uk">Українська</option><option value="en">English</option><option value="ru">Русский</option></select></div>
+  <div class="sheet-head"><h2>Settings</h2><button onclick="closeSettings()">×</button></div>
+  <label class="settings-label">Language
+    <select id="langSelect" onchange="setLanguage(this.value)"><option value="uk">Українська</option><option value="en">English</option><option value="ru">Русский</option></select>
+  </label>
   <button class="settings-link" onclick="openResourcesSheet();closeSettings()">Official & verified sources <span>›</span></button>
-  <button class="settings-link" onclick="openExternal('https://visione.one/UALIVESMATTER/')">About UA LIVES MATTER <span>↗</span></button>
-  <div class="safety-disclaimer">Free, open and independent. Built for civilians. This app does not replace official emergency systems.</div>
+  <button class="settings-link" onclick="openExternal('https://visione.one/SAFEKRAY/')">About SAFEKRAY <span>↗</span></button>
+  <div class="settings-foot">FREE · OPEN · INDEPENDENT<br><b>AN APP BY VISIONE</b></div>
 </div></div>
 
-<div id="storyViewer" class="story-viewer hidden" onclick="closeStoryViewer()">
-  <button class="story-close">×</button><div id="storyContent" class="story-content" onclick="event.stopPropagation()"></div>
-</div>
+<div id="postSheet" class="sheet"><div class="sheetbox"><textarea id="postCaption"></textarea><input id="postMedia" type="file"><div id="postUploadStatus"></div></div></div>
+<div id="storySheet" class="sheet"><div class="sheetbox"><input id="storyMedia" type="file"><div id="storyUploadStatus"></div></div></div>
+<div id="storyViewer" class="story-viewer hidden"><div id="storyContent"></div></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

@@ -1,4 +1,4 @@
-package org.ualivesmatter.app
+package org.safekray.app
 
 import android.Manifest
 import android.app.Activity
@@ -95,7 +95,7 @@ class MainActivity : Activity() {
                     startActivity(Intent(Intent.ACTION_DIAL, uri))
                     return true
                 }
-                if (uri.scheme == "ualivesmatter" && uri.host == "auth") {
+                if (uri.scheme == "safekray" && uri.host == "auth") {
                     pendingDeepLink = uri.toString()
                     deliverPendingDeepLink()
                     return true
