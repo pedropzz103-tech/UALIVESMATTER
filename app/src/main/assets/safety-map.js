@@ -357,12 +357,19 @@ async function buildSaferRoute(dest,sourceLabel=''){
   routeDestinationMarker=L.marker([dest.lat,dest.lng],{icon:icons.shelter}).addTo(safetyLayers.route);
 
   try{
-    const url=cfg.osrmBase+'/route/v1/driving/'+
+    const requestedProfile=window.uaRouteMode==='walking'?'walking':window.uaRouteMode==='cycling'?'cycling':'driving';
+    let effectiveProfile=requestedProfile;
+    const routeUrl=(profile)=>cfg.osrmBase+'/route/v1/'+profile+'/'+
       start.lng+','+start.lat+';'+dest.lng+','+dest.lat+
       '?alternatives=3&steps=true&geometries=geojson&overview=full';
-    const resp=await fetch(url);
+    let resp=await fetch(routeUrl(effectiveProfile));
+    if(!resp.ok&&effectiveProfile!=='driving'){
+      effectiveProfile='driving';
+      resp=await fetch(routeUrl(effectiveProfile));
+    }
     if(!resp.ok)throw new Error('route');
     const data=await resp.json();
+    window.uaRouteEffectiveMode=effectiveProfile;
     if(data.code!=='Ok'||!data.routes?.length)throw new Error('route');
 
     const ranked=data.routes.map((r,i)=>({route:r,index:i,score:routeRiskScore(r)}))
@@ -380,7 +387,10 @@ async function buildSaferRoute(dest,sourceLabel=''){
     const min=Math.round(best.route.duration/60);
     const riskText=best.score===0?(currentLang==='uk'?'низький за доступними даними':currentLang==='ru'?'низкий по доступным данным':'lower in available data'):(best.score<50?(currentLang==='uk'?'помірний':currentLang==='ru'?'умеренный':'moderate'):(currentLang==='uk'?'підвищений':currentLang==='ru'?'повышенный':'elevated'));
     const allRisk=ranked.every(x=>x.score>0);
-    const note=allRisk?t('routeAllRisk'):t('routeBest');
+    const fallbackNote=effectiveProfile!==requestedProfile
+      ?(currentLang==='uk'?'Пішохідний/велосипедний профіль недоступний, показано автомобільний маршрут.':currentLang==='ru'?'Пешеходный/велосипедный профиль недоступен, показан автомобильный маршрут.':'Requested travel profile unavailable; showing the driving route.')
+      :'';
+    const note=(allRisk?t('routeAllRisk'):t('routeBest'))+(fallbackNote?' · '+fallbackNote:'');
 
     document.getElementById('routeSummary').innerHTML=
       '<div class="route-metrics">'+
