@@ -7,7 +7,7 @@
 
     <application
         android:allowBackup="true"
-        android:label="UA LIVES MATTER"
+        android:label="SAFEKRAY"
         android:usesCleartextTraffic="false"
         android:theme="@android:style/Theme.Material.NoActionBar">
         <activity
@@ -23,7 +23,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="ualivesmatter" android:host="auth" />
+                <data android:scheme="safekray" android:host="auth" />
             </intent-filter>
         </activity>
     </application>
