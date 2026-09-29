@@ -18,7 +18,7 @@ Free, independent Android civilian-safety and community app for Ukraine. A VISIO
 - Photo/video feed, Stories, chat, accounts and profiles retained from v0.5
 - Ukrainian, Russian and English UI
 - Android deep-link handler for email confirmation
-- App remains locked when Android geolocation resolves the device country as RU
+- No hard access lock based only on device-inferred country, reducing the risk of lockout during GPS/geocoding interference
 
 ## Important route behavior
 The route feature is informational. It requests alternative road routes and scores the returned alternatives against the risk areas currently visible to the app. It is **not** an official evacuation order and cannot guarantee that a road is open or safe.
