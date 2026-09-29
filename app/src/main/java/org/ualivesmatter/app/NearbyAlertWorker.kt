@@ -28,9 +28,6 @@ class NearbyAlertWorker(
     override fun doWork(): Result {
         val context = applicationContext
         val location = lastLocation(context) ?: return Result.success()
-        val country = countryCode(context, location)
-        if (country == "RU" || country == "UNKNOWN") return Result.success()
-
         val prefs = context.getSharedPreferences("ualives", Context.MODE_PRIVATE)
         val lastCheck = prefs.getString("nearby_last_check", null)
             ?: isoUtc(System.currentTimeMillis() - 15 * 60 * 1000L)
